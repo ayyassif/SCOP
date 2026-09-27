@@ -29,44 +29,68 @@ Camera::Camera(
     MovementSpeed(SPEED),
     MouseSensitivity(SENSITIVITY),
     Zoom(ZOOM),
-    position(position),
+    Position(position),
     WorldUp(up),
-    Yaw(yaw), Pitch(pitch)
+    Yaw(yaw), Pitch(pitch),
+    isSprinting(false)
 {
     updateCameraVectors();
 }
 
-Mat4 Camera::GetViewMatrix()
+Mat4 Camera::GetViewMatrix() const
 {
     return Mat4::lookAt(Position, Position + Front, Up);
 }
 
 void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
 {
-    float velocity = MovementSpeed * deltaTime;
-    if (direction == SPRINT)
-        velocity *= ACCELERATION;
-    if (direction == FORWARD)
-        Position += Front * velocity;
-    if (direction == BACKWARD)
-        Position -= Front * velocity;
-    if (direction == LEFT)
-        Position -= Right * velocity;
-    if (direction == RIGHT)
-        Position += Right * velocity;
-    if (direction == UP)
-        Position += WorldUp * velocity;
-    if (direction == DOWN)
-        Position -= WorldUp * velocity;
+    switch (direction)
+    {
+        case SPRINT_ON:
+            isSprinting = true;
+            return;
+        case SPRINT_OFF:
+            isSprinting = false;
+            return;
+        default:
+            break;
+    }
+
+    const float velocity = MovementSpeed * deltaTime
+        * (isSprinting ? SPRINT : 1.0f);
+
+    switch (direction)
+    {
+        case FORWARD:
+            Position += Front * velocity;
+            break;
+        case BACKWARD:
+            Position -= Front * velocity;
+            break;
+        case LEFT:
+            Position -= Right * velocity;
+            break;
+        case RIGHT:
+            Position += Right * velocity;
+            break;
+        case UP:
+            Position += WorldUp * velocity;
+            break;
+        case DOWN:
+            Position -= WorldUp * velocity;
+            break;
+        default:
+            break;
+    }
 }
 
-void Camera::ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true)
+void Camera::ProcessMouseMovement(Vec2 offset, bool constrainPitch)
 {
-    xoffset *= MouseSensitivity;
-    yoffset *= MouseSensitivity;
+    offset.x *= MouseSensitivity;
+    offset.y *= MouseSensitivity;
 
-    Yaw   += xoffset;
-    Pitch += yoffset;
+    Yaw   += offset.x;
+    Pitch += offset.y;
 
     if (constrainPitch)
     {
@@ -80,7 +104,7 @@ void Camera::ProcessMouseMovement(float xoffset, float yoffset, GLboolean constr
 
 void Camera::ProcessMouseScroll(float yoffset)
 {
-    Zoom -= (float)yoffset;
+    Zoom -= yoffset;
     if (Zoom < 1.0f)
         Zoom = 1.0f;
     if (Zoom > 45.0f)
@@ -90,12 +114,12 @@ void Camera::ProcessMouseScroll(float yoffset)
 void Camera::updateCameraVectors()
 {
     Vec3 front;
-    const float radiantYaw = Math::radians(Yaw);
-    const float radiantPitch = Math::radians(Pitch);
+    const float rYaw = Math::radians(Yaw);
+    const float rPitch = Math::radians(Pitch);
 
-    front.x = cos(radiantYaw) * cos(radiantPitch);
-    front.y = sin(radiantPitch);
-    front.z = sin(radiantYaw) * cos(radiantPitch);
+    front.x = cos(rYaw) * cos(rPitch);
+    front.y = sin(rPitch);
+    front.z = sin(rYaw) * cos(rPitch);
     Front   = front.normalize();
 
     Right = Front.cross(WorldUp).normalize();

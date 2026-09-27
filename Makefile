@@ -2,7 +2,7 @@ NAME := scop
 
 CXX := g++
 CPPFLAGS := -Iglad/include
-CXXFLAGS :=
+CXXFLAGS := -O2 -std=c++17
 LDFLAGS :=
 LDLIBS := -lglfw -lGL -ldl
 

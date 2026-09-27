@@ -5,108 +5,28 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <array>
 #include "Shader.hpp"
 #include "math/Math.hpp"
 #include "Camera.hpp"
+#include "Input.hpp"
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
+
+GLFWwindow *initiate();
 
 Camera cam(Vec3(0.0f, 0.0f,  3.0f), Vec3(0.0f, 1.0f,  0.0f));
-
-std::string readFile(const char* filename)
-{
-    std::ifstream file(filename);
-
-    return std::string(
-        (std::istreambuf_iterator<char>(file)),
-        std::istreambuf_iterator<char>()
-    );
-}
+GLFWwindow *window = initiate();
+Input  input(window);
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow *window)
+GLFWwindow *initiate()
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-}
-
-bool    compileShader(const unsigned int &shader, const char *shaderStr)
-{
-    glCompileShader(shader);
-    // start: error check
-    int  success;
-    char infoLog[512];
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-
-    if(!success)
-    {
-        glGetShaderInfoLog(shader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::" << shaderStr << "::COMPILATION_FAILED\n" << infoLog << std::endl;
-        return false;
-    }
-    // end: error check
-    return true;
-}
-
-#include <random>
-
-float randomFloat(float min, float max)
-{
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dist(min, max);
-    return dist(gen);
-}
-
-float ;
-
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-    static float lastX = 400, lastY = 300;
-    static bool firstMouse = true;
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
-    lastX = xpos;
-    lastY = ypos;
-
-    if (firstMouse)
-    {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-    const float sensitivity = 0.1f;
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
-
-    yaw   += xoffset;
-    pitch += yoffset;  
-
-    if(pitch > 89.0f)
-        pitch =  89.0f;
-    if(pitch < -89.0f)
-        pitch = -89.0f;
-}
-
-float fov = 45.0f;
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-    fov -= (float)yoffset;
-    if (fov < 1.0f)
-        fov = 1.0f;
-    if (fov > 45.0f)
-        fov = 45.0f; 
-}
-
-int main()
-{
-    // initiate glfw and configure
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -118,7 +38,7 @@ int main()
     {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
-        return -1;
+        return nullptr;
     }
     glfwMakeContextCurrent(window);
     
@@ -126,10 +46,75 @@ int main()
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
-        return -1;
+        return nullptr;
     }
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    return (window);
+}
+
+
+std::string readFile(const char* filename)
+{
+    std::ifstream file(filename);
+
+    return std::string(
+        (std::istreambuf_iterator<char>(file)),
+        std::istreambuf_iterator<char>()
+    );
+}
+
+
+
+void processInput(GLFWwindow *window)
+{
+    const float deltaTime = Math::getDeltaTime();
+
+    if (input.getKeyPressed(GLFW_KEY_ESCAPE))
+        glfwSetWindowShouldClose(window, true);
+
+    if (input.getKeyPressed(GLFW_KEY_LEFT_CONTROL))
+        cam.ProcessKeyboard(SPRINT_ON, deltaTime);
+    else if (input.getKeyReleased(GLFW_KEY_LEFT_CONTROL))
+        cam.ProcessKeyboard(SPRINT_OFF, deltaTime);
+
+    constexpr std::array<std::pair<int, Camera_Movement>, 6> movementKeys = {{
+        {GLFW_KEY_W, FORWARD},
+        {GLFW_KEY_S, BACKWARD},
+        {GLFW_KEY_D, RIGHT},
+        {GLFW_KEY_A, LEFT},
+        {GLFW_KEY_SPACE, UP},
+        {GLFW_KEY_LEFT_SHIFT, DOWN}
+    }};
+
+    for (const auto& [key, movement] : movementKeys)
+    {
+        if (input.getKeyPressed(key))
+            cam.ProcessKeyboard(movement, deltaTime);
+    }
+}
+
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    cam.ProcessMouseMovement(
+        input.calculateMouseDelta(
+            (float)xpos,
+            (float)ypos
+        )
+    );
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    cam.ProcessMouseScroll((float)yoffset);
+}
+
+
+
+int main()
+{
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     
@@ -264,7 +249,6 @@ int main()
     // ourShader.setMat4("mvp", projection * modelView);
     
     glEnable(GL_DEPTH_TEST);  
-    float mixF = 0.2;
     float slider = 0.05;
     float fslider = 0.1f;
 
@@ -291,58 +275,29 @@ int main()
     {
         // input
         processInput(window);
-        
-        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-            mixF -= slider;
-        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-            mixF += slider;
-        mixF = (mixF > 1) ? 1 : (mixF < 0) ? 0 : mixF;
-        ourShader.setFloat("mixF", mixF);
+
+        // rendering commands
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // rendering commands
-        // ourShader.setFloat("offset", -.5f);
-       
+        
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, cTexture);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, wTexture);
         ourShader.use();
-        
-        float cameraSpeed = 2.5f * Math::getDeltaTime();
-        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-            cameraSpeed *= 5;
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-            cameraPos += cameraFront * cameraSpeed;
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-            cameraPos -= cameraFront * cameraSpeed;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-            cameraPos += cameraFront.cross(cameraUp).normalize() * cameraSpeed;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-            cameraPos -= cameraFront.cross(cameraUp).normalize() * cameraSpeed;
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-            cameraPos += cameraUp * cameraSpeed;
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-            cameraPos -= cameraUp * cameraSpeed;
-        Mat4 projection = Mat4::perspective(Math::radians(fov), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 100.0f);
-
-        Vec3 direction;
-        direction.x = cos(Math::radians(yaw)) * cos(Math::radians(pitch));
-        direction.y = sin(Math::radians(pitch));
-        direction.z = sin(Math::radians(yaw)) * cos(Math::radians(pitch));
-        cameraFront = direction.normalize();
-
-        Mat4 view = Mat4::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+       
+        Mat4 projection = Mat4::perspective(Math::radians(cam.Zoom), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 100.0f);
         
         glBindVertexArray(VAO);
-
 
         for (unsigned int i = 0; i < 10; i++)
         {
             float angle = i * 20.0f;
             Mat4 model = Mat4::model(cubePositions[i], Math::radians(angle), Vec3(1.0f, 0.3f, 0.5f));
 
-            ourShader.setMat4("mvp", projection * view * model);
+            ourShader.setMat4("mvp", projection
+                                    * cam.GetViewMatrix()
+                                    * model);
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
