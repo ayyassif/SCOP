@@ -9,7 +9,7 @@ LDLIBS := -lglfw -lGL -ldl
 SRC_DIRS := . math glad/src
 BUILD_DIR := build
 
-SRCS := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp))
+SRCS := $(filter-out ./main-copy.cpp,$(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp)))
 SRCS += $(wildcard glad/src/*.c)
 
 OBJS := $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(filter %.cpp,$(SRCS)))
