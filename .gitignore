@@ -1,0 +1,6 @@
+textures/*
+resources/*
+lillies/*
+scop
+*.o
+build/*
