@@ -35,9 +35,6 @@ void Scop::setupTexture(const PPM &image)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     //  <---->
-
-    // should load the image manualy instead of using stbi
-
     glTexImage2D(
         GL_TEXTURE_2D,
         0,
@@ -161,7 +158,6 @@ GLFWwindow *initiate()
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    stbi_set_flip_vertically_on_load(true); 
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
     glfwSetCursorPosCallback(window, mouse_callback);

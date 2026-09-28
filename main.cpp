@@ -1,15 +1,9 @@
-#define STB_IMAGE_IMPLEMENTATION
 #include "Scop.hpp"
 
 
 int main()
 {
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    
-    
-
-    ///////////////////////////////////////////////////
-    
     float vertices[] = {
     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
      0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
@@ -62,7 +56,7 @@ int main()
 
     PPM image;
 
-    image.load("textures/container.ppm");
+    image.load("textures/awesomeface.ppm");
 
     Scop scop(
         std::vector<float>(
