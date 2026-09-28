@@ -4,6 +4,132 @@ Camera cam(Vec3(0.0f, 0.0f,  3.0f), Vec3(0.0f, 1.0f,  0.0f));
 GLFWwindow *window = initiate();
 Input input(window);
 
+
+
+ // <------------------------------------------------------------------------------------->
+ // <-----------------------------------class functions----------------------------------->
+ // <------------------------------------------------------------------------------------->
+
+Scop::Scop(
+    const std::vector<float>& vertices,
+    const std::vector<float>& indices,
+    const PPM &image
+)
+{
+    setupVertexBuffers(vertices, indices);
+    setupTexture(image);
+}
+
+void Scop::setupTexture(const PPM &image)
+{
+    int width;
+    int height;
+    int nrChannels;
+
+    glGenTextures(1, &texture); 
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    // will change this later for changing textures when needed
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //  <---->
+
+    // should load the image manualy instead of using stbi
+
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGB,
+        image.getWidth(),
+        image.getHeight(),
+        0,
+        GL_RGB,
+        GL_UNSIGNED_BYTE,
+        image.getPixels().data()
+    );
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+}
+
+void Scop::setupVertexBuffers(
+    const std::vector<float>& vertices,
+    const std::vector<float>& indices
+)
+{
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &EBO);
+    glGenBuffers(1, &VBO);
+
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        vertices.size() * sizeof(float),
+        vertices.data(), GL_STATIC_DRAW
+    );
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(
+        GL_ELEMENT_ARRAY_BUFFER,
+        indices.size() * sizeof(float),
+        indices.data(), GL_STATIC_DRAW
+    );
+
+    // will change this code later if we are adding colors
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    //  <---->
+}
+
+void Scop::loop()
+{
+    Shader shader("shaders/vertex.glsl", "shaders/fragment.glsl");
+
+    shader.use();
+    shader.setInt("Texture", 0);
+    while(!glfwWindowShouldClose(window))
+    {
+        // input
+        processInput(window, input, cam);
+
+        // rendering commands
+        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        shader.use();
+       
+        Mat4 projection = Mat4::perspective(Math::radians(cam.Zoom), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 100.0f);
+        
+        // glBindVertexArray(VAO);
+
+        Mat4 model = Mat4::model(Vec3( 0.0f,  0.0f,  0.0f), Math::radians(0), Vec3(1.0f, 0.3f, 0.5f));
+
+        shader.setMat4("mvp", projection
+                                * cam.GetViewMatrix()
+                                * model);
+
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        // check events and swap buffers
+        glfwPollEvents();
+        glfwSwapBuffers(window);
+    }
+    glfwTerminate();
+}
+
+
+
+ // <-------------------------------------------------------------------------------------->
+ // <-----------------------------------helper functions----------------------------------->
+ // <-------------------------------------------------------------------------------------->
+
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
@@ -35,6 +161,13 @@ GLFWwindow *initiate()
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    stbi_set_flip_vertically_on_load(true); 
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback); 
+    glEnable(GL_DEPTH_TEST);
+    
     return (window);
 }
 
