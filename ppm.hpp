@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 #include <fstream>
-// #include <stdexcept>
 #include <limits>
+#include <stdexcept>
 
 class PPM
 {
@@ -14,18 +14,20 @@ public:
 
     void load(const std::string& path);
 
-    int getWidth() const;
-    int getHeight() const;
-    const std::vector<unsigned char>& getPixels() const;
+    int  getWidth() const;
+    int  getHeight() const;
 
+    const std::vector<unsigned char>& getPixels() const;
 private:
     int width;
     int height;
     int maxColor;
     std::vector<unsigned char> pixels;
+    
 
-    void skipSpaceAndComments(std::ifstream& file);
     std::string readToken(std::ifstream& file);
+    void        skipSpaceAndComments(std::ifstream& file);
+    int         parseInteger(const std::string& token, const std::string& field);
 };
 
 #endif

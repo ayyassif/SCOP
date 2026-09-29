@@ -3,37 +3,110 @@
 
 #include <cmath>
 
-class Vec3
+template <typename T = float>
+class Vec3T
 {
 public:
-    float x;
-    float y;
-    float z;
+    T x;
+    T y;
+    T z;
 
-    float& operator[](int index);
-    const float& operator[](int index) const;
+    T& operator[](int index)
+    {
+        if (index == 0) return x;
+        if (index == 1) return y;
+        return z;
+    }
 
-    Vec3();
-    Vec3(float value);
-    Vec3(float x, float y, float z);
+    const T& operator[](int index) const
+    {
+        if (index == 0) return x;
+        if (index == 1) return y;
+        return z;
+    }
 
-    static Vec3 normalize(Vec3 v);
+    Vec3T() : x(0), y(0), z(0) {}
+    Vec3T(T value) : x(value), y(value), z(value) {}
+    Vec3T(T x_, T y_, T z_) : x(x_), y(y_), z(z_) {}
 
-    float length() const;
-    Vec3 normalize() const;
+    static Vec3T normalize(Vec3T v)
+    {
+        return v.normalize();
+    }
 
-    float dot(const Vec3& v) const;
-    Vec3 cross(const Vec3& v) const;
-    
+    T length() const
+    {
+        return static_cast<T>(std::sqrt(dot(*this)));
+    }
 
-    Vec3 operator+(const Vec3& v) const;
-    Vec3 operator-(const Vec3& v) const;
-    Vec3 operator*(float scalar) const;
-    Vec3 operator/(float scalar) const;
+    Vec3T normalize() const
+    {
+        const T len = length();
+        if (len == T(0)) {
+            return Vec3T();
+        }
+        return *this / len;
+    }
 
-    Vec3& operator+=(const Vec3& v);
-    Vec3& operator-=(const Vec3& v);
-    Vec3& operator*=(float scalar);
+    T dot(const Vec3T& v) const
+    {
+        return x * v.x + y * v.y + z * v.z;
+    }
+
+    Vec3T cross(const Vec3T& v) const
+    {
+        return Vec3T(
+            y * v.z - z * v.y,
+            z * v.x - x * v.z,
+            x * v.y - y * v.x
+        );
+    }
+
+    Vec3T operator+(const Vec3T& v) const
+    {
+        return Vec3T(x + v.x, y + v.y, z + v.z);
+    }
+
+    Vec3T operator-(const Vec3T& v) const
+    {
+        return Vec3T(x - v.x, y - v.y, z - v.z);
+    }
+
+    Vec3T operator*(T scalar) const
+    {
+        return Vec3T(x * scalar, y * scalar, z * scalar);
+    }
+
+    Vec3T operator/(T scalar) const
+    {
+        return Vec3T(x / scalar, y / scalar, z / scalar);
+    }
+
+    Vec3T& operator+=(const Vec3T& v)
+    {
+        x += v.x;
+        y += v.y;
+        z += v.z;
+        return *this;
+    }
+
+    Vec3T& operator-=(const Vec3T& v)
+    {
+        x -= v.x;
+        y -= v.y;
+        z -= v.z;
+        return *this;
+    }
+
+    Vec3T& operator*=(T scalar)
+    {
+        x *= scalar;
+        y *= scalar;
+        z *= scalar;
+        return *this;
+    }
 };
+
+using Vec3 = Vec3T<float>;
 
 #endif

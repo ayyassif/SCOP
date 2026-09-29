@@ -1,10 +1,8 @@
 #include "ppm.hpp"
 
-#include <stdexcept>
+PPM::PPM() : width(0), height(0), maxColor(0), pixels() {}
 
-namespace
-{
-int parseInteger(const std::string& token, const std::string& field)
+int PPM::parseInteger(const std::string& token, const std::string& field)
 {
     if (token.empty())
         throw std::invalid_argument("PPM: missing " + field);
@@ -29,9 +27,6 @@ int parseInteger(const std::string& token, const std::string& field)
 
     return static_cast<int>(value);
 }
-}
-
-PPM::PPM() : width(0), height(0), maxColor(0) {}
 
 void PPM::load(const std::string& path)
 {

@@ -1,23 +1,50 @@
 #ifndef VEC4_HPP
 #define VEC4_HPP
 
-class Vec4
+template <typename T = float>
+class Vec4T
 {
 public:
-    float x;
-    float y;
-    float z;
-    float w;
+    T x;
+    T y;
+    T z;
+    T w;
 
-    float& operator[](int index);
-    const float& operator[](int index) const;
+    T& operator[](int index)
+    {
+        if (index == 0) return x;
+        if (index == 1) return y;
+        if (index == 2) return z;
+        return w;
+    }
 
-    Vec4();
-    Vec4(float x, float y, float z, float w);
+    const T& operator[](int index) const
+    {
+        if (index == 0) return x;
+        if (index == 1) return y;
+        if (index == 2) return z;
+        return w;
+    }
 
-    Vec4 operator+(const Vec4& v) const;
-    Vec4 operator-(const Vec4& v) const;
-    Vec4 operator*(float scalar) const;
+    Vec4T() : x(0), y(0), z(0), w(0) {}
+    Vec4T(T x_, T y_, T z_, T w_) : x(x_), y(y_), z(z_), w(w_) {}
+
+    Vec4T operator+(const Vec4T& v) const
+    {
+        return Vec4T(x + v.x, y + v.y, z + v.z, w + v.w);
+    }
+
+    Vec4T operator-(const Vec4T& v) const
+    {
+        return Vec4T(x - v.x, y - v.y, z - v.z, w - v.w);
+    }
+
+    Vec4T operator*(T scalar) const
+    {
+        return Vec4T(x * scalar, y * scalar, z * scalar, w * scalar);
+    }
 };
+
+using Vec4 = Vec4T<float>;
 
 #endif

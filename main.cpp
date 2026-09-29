@@ -4,53 +4,69 @@
 int main()
 {
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    float vertices[] = {
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+    // float vertices[] = {
+    //     // back face
+    //     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 0
+    //     0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // 1
+    //     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 2
+    //     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // 3
 
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    //     // front face
+    //     -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 4
+    //     0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // 5
+    //     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 6
+    //     -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // 7
 
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    //     // left face
+    //     -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 8
+    //     -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 9
+    //     -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 10
+    //     -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 11
 
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    //     // right face
+    //     0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 12
+    //     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 13
+    //     0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 14
+    //     0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 15
 
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    //     // bottom face
+    //     -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 16
+    //     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // 17
+    //     0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // 18
+    //     -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 19
 
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-};
-    unsigned int indices[] = {  // note that we start from 0!
-        0, 1, 3,   // first triangle
-        1, 2, 3    // second triangle
-    };  
+    //     // top face
+    //     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // 20
+    //     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 21
+    //     0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 22
+    //     -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // 23
+    // };
+
+    // int indices[] = {
+    //     // back
+    //     0,  1,  2,
+    //     2,  3,  0,
+
+    //     // front
+    //     4,  5,  6,
+    //     6,  7,  4,
+
+    //     // left
+    //     8,  9, 10,
+    //     10, 11,  8,
+
+    //     // right
+    //     12, 13, 14,
+    //     14, 15, 12,
+
+    //     // bottom
+    //     16, 17, 18,
+    //     18, 19, 16,
+
+    //     // top
+    //     20, 21, 22,
+    //     22, 23, 20
+    // };
     const char *str = "textures/container.jpg";
 
 
@@ -58,15 +74,18 @@ int main()
 
     image.load("textures/awesomeface.ppm");
 
-    Scop scop(
-        std::vector<float>(
-            vertices,
-            vertices + sizeof(vertices) / sizeof(vertices[0])),
-        std::vector<float>(
-            indices,
-            indices + sizeof(indices) / sizeof(indices[0])),
-        image
-    );
+    ObjParser parser;
+    parser.load("resources/42.obj");
+    const std::vector<Vertex>& vertices = parser.getVertices();
+    const std::vector<int>& indices = parser.getIndices();
+    // std::vector<float> vertexVector(
+    //     vertices,
+    //     vertices + sizeof(vertices) / sizeof(vertices[0]));
+    // std::vector<int> indexVector(
+    //     indices,
+    //     indices + sizeof(indices) / sizeof(indices[0]));
+
+    Scop scop(vertices, indices, image);
 
     scop.loop();
         

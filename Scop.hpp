@@ -7,13 +7,16 @@
 #include <fstream>
 #include <cmath>
 #include <array>
+#include <cstddef>
 #include <vector>
 
+#include "ObjParser.hpp"
 #include "ppm.hpp"
 #include "Shader.hpp"
 #include "math/Math.hpp"
 #include "Camera.hpp"
 #include "Input.hpp"
+#include "ObjParser.hpp"
 
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
@@ -37,17 +40,18 @@ private:
     unsigned int VAO;
     unsigned int EBO;
     unsigned int texture;
+    std::size_t indexCount;
     
     void setupTexture(const PPM &image);
     void setupVertexBuffers(
-        const std::vector<float>& vertices,
-        const std::vector<float>& indices
+        const std::vector<Vertex>& vertices,
+        const std::vector<int>& indices
     );
 
 public:
     Scop(
-        const std::vector<float>& vertices,
-        const std::vector<float>& indices,
+        const std::vector<Vertex>& vertices,
+        const std::vector<int>& indices,
         const PPM &image
     );
 

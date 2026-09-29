@@ -11,11 +11,12 @@ Input input(window);
  // <------------------------------------------------------------------------------------->
 
 Scop::Scop(
-    const std::vector<float>& vertices,
-    const std::vector<float>& indices,
+    const std::vector<Vertex>& vertices,
+    const std::vector<int>& indices,
     const PPM &image
 )
 {
+    indexCount = indices.size();
     setupVertexBuffers(vertices, indices);
     setupTexture(image);
 }
@@ -52,8 +53,8 @@ void Scop::setupTexture(const PPM &image)
 }
 
 void Scop::setupVertexBuffers(
-    const std::vector<float>& vertices,
-    const std::vector<float>& indices
+    const std::vector<Vertex>& vertices,
+    const std::vector<int>& indices
 )
 {
     glGenVertexArrays(1, &VAO);
@@ -65,21 +66,23 @@ void Scop::setupVertexBuffers(
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(
         GL_ARRAY_BUFFER,
-        vertices.size() * sizeof(float),
+        vertices.size() * sizeof(Vertex),
         vertices.data(), GL_STATIC_DRAW
     );
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(
         GL_ELEMENT_ARRAY_BUFFER,
-        indices.size() * sizeof(float),
+        indices.size() * sizeof(int),
         indices.data(), GL_STATIC_DRAW
     );
 
     // will change this code later if we are adding colors
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(offsetof(Vertex, x)));
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(offsetof(Vertex, u)));
     glEnableVertexAttribArray(1);
     //  <---->
 }
@@ -103,7 +106,9 @@ void Scop::loop()
        
         Mat4 projection = Mat4::perspective(Math::radians(cam.Zoom), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 100.0f);
         
-        // glBindVertexArray(VAO);
+        glBindVertexArray(VAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
 
         Mat4 model = Mat4::model(Vec3( 0.0f,  0.0f,  0.0f), Math::radians(0), Vec3(1.0f, 0.3f, 0.5f));
 
@@ -111,7 +116,8 @@ void Scop::loop()
                                 * cam.GetViewMatrix()
                                 * model);
 
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indexCount), GL_UNSIGNED_INT, 0);
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         // check events and swap buffers
         glfwPollEvents();

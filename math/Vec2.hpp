@@ -3,27 +3,65 @@
 
 #include <cmath>
 
-class Vec2
+template <typename T = float>
+class Vec2T
 {
 public:
-    float x;
-    float y;
+    T x;
+    T y;
 
-    float& operator[](int index);
-    const float& operator[](int index) const;
+    T& operator[](int index)
+    {
+        return (index == 0) ? x : y;
+    }
 
-    Vec2();
-    Vec2(float x, float y);
+    const T& operator[](int index) const
+    {
+        return (index == 0) ? x : y;
+    }
 
-    float length() const;
-    Vec2 normalize() const;
+    Vec2T() : x(0), y(0) {}
+    Vec2T(T x_, T y_) : x(x_), y(y_) {}
 
-    Vec2 operator+(const Vec2& v) const;
-    Vec2 operator-(const Vec2& v) const;
-    Vec2 operator*(float scalar) const;
-    Vec2 operator/(float scalar) const;
+    T length() const
+    {
+        return static_cast<T>(std::sqrt(x * x + y * y));
+    }
 
-    float dot(const Vec2& v) const;
+    Vec2T normalize() const
+    {
+        const T len = length();
+        if (len == T(0))
+            return Vec2T();
+        return Vec2T(x / len, y / len);
+    }
+
+    Vec2T operator+(const Vec2T& v) const
+    {
+        return Vec2T(x + v.x, y + v.y);
+    }
+
+    Vec2T operator-(const Vec2T& v) const
+    {
+        return Vec2T(x - v.x, y - v.y);
+    }
+
+    Vec2T operator*(T scalar) const
+    {
+        return Vec2T(x * scalar, y * scalar);
+    }
+
+    Vec2T operator/(T scalar) const
+    {
+        return Vec2T(x / scalar, y / scalar);
+    }
+
+    T dot(const Vec2T& v) const
+    {
+        return x * v.x + y * v.y;
+    }
 };
+
+using Vec2 = Vec2T<float>;
 
 #endif
