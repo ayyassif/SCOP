@@ -3,8 +3,11 @@
 Camera cam(Vec3(0.0f, 0.0f,  3.0f), Vec3(0.0f, 1.0f,  0.0f));
 GLFWwindow *window = initiate();
 Input input(window);
-
-
+namespace
+{
+    bool gMouseCaptured = true;
+    bool gTabPressedLastFrame = false;
+}
 
  // <------------------------------------------------------------------------------------->
  // <-----------------------------------class functions----------------------------------->
@@ -79,10 +82,10 @@ void Scop::setupVertexBuffers(
 
     // will change this code later if we are adding colors
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          reinterpret_cast<void*>(offsetof(Vertex, x)));
+                          reinterpret_cast<void*>(offsetof(Vertex, position) + offsetof(Vec3, x)));
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          reinterpret_cast<void*>(offsetof(Vertex, u)));
+                          reinterpret_cast<void*>(offsetof(Vertex, texcoord) + offsetof(Vec2, x)));
     glEnableVertexAttribArray(1);
     //  <---->
 }
@@ -93,19 +96,27 @@ void Scop::loop()
 
     shader.use();
     shader.setInt("Texture", 0);
+    bool useTexture = true;
+    bool mKeyPressedLastFrame = false;
     while(!glfwWindowShouldClose(window))
     {
         // input
         processInput(window, input, cam);
+
+        const bool mKeyPressed = input.getKeyPressed(GLFW_KEY_M);
+        if (mKeyPressed && !mKeyPressedLastFrame)
+            useTexture = !useTexture;
+        mKeyPressedLastFrame = mKeyPressed;
 
         // rendering commands
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader.use();
-       
+        shader.setBool("useTexture", useTexture);
+
         Mat4 projection = Mat4::perspective(Math::radians(cam.Zoom), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 100.0f);
-        
+
         glBindVertexArray(VAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -190,6 +201,24 @@ void processInput(GLFWwindow *window, Input &input, Camera &cam)
     if (input.getKeyPressed(GLFW_KEY_ESCAPE))
         glfwSetWindowShouldClose(window, true);
 
+    const bool tabHeld = input.getKeyPressed(GLFW_KEY_TAB);
+    if (tabHeld && !gTabPressedLastFrame)
+    {
+        gMouseCaptured = !gMouseCaptured;
+        if (gMouseCaptured)
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            glfwSetCursorPos(window, SCR_WIDTH / 2.0, SCR_HEIGHT / 2.0);
+            input.resetMouseState();
+        }
+        else
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+    gTabPressedLastFrame = tabHeld;
+
+    if (!gMouseCaptured)
+        return;
+
     if (input.getKeyPressed(GLFW_KEY_LEFT_CONTROL))
         cam.ProcessKeyboard(SPRINT_ON, deltaTime);
     else if (input.getKeyReleased(GLFW_KEY_LEFT_CONTROL))
@@ -213,6 +242,9 @@ void processInput(GLFWwindow *window, Input &input, Camera &cam)
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
+    if (!gMouseCaptured)
+        return;
+
     cam.ProcessMouseMovement(
         input.calculateMouseDelta(
             (float)xpos,

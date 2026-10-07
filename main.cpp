@@ -1,94 +1,37 @@
 #include "Scop.hpp"
-
+#include "parser/OBJParser.hpp"
+#include "parser/UVMapper.hpp"
+#include "parser/MeshBuilder.hpp"
 
 int main()
 {
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    // float vertices[] = {
-    //     // back face
-    //     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 0
-    //     0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // 1
-    //     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 2
-    //     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // 3
-
-    //     // front face
-    //     -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 4
-    //     0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // 5
-    //     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 6
-    //     -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // 7
-
-    //     // left face
-    //     -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 8
-    //     -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 9
-    //     -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 10
-    //     -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 11
-
-    //     // right face
-    //     0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 12
-    //     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 13
-    //     0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 14
-    //     0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 15
-
-    //     // bottom face
-    //     -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 16
-    //     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // 17
-    //     0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // 18
-    //     -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 19
-
-    //     // top face
-    //     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // 20
-    //     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 21
-    //     0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 22
-    //     -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // 23
-    // };
-
-    // int indices[] = {
-    //     // back
-    //     0,  1,  2,
-    //     2,  3,  0,
-
-    //     // front
-    //     4,  5,  6,
-    //     6,  7,  4,
-
-    //     // left
-    //     8,  9, 10,
-    //     10, 11,  8,
-
-    //     // right
-    //     12, 13, 14,
-    //     14, 15, 12,
-
-    //     // bottom
-    //     16, 17, 18,
-    //     18, 19, 16,
-
-    //     // top
-    //     20, 21, 22,
-    //     22, 23, 20
-    // };
-    const char *str = "textures/container.jpg";
-
-
     PPM image;
-
     image.load("textures/awesomeface.ppm");
 
-    ObjParser parser;
-    parser.load("resources/42.obj");
-    const std::vector<Vertex>& vertices = parser.getVertices();
-    const std::vector<int>& indices = parser.getIndices();
-    // std::vector<float> vertexVector(
-    //     vertices,
-    //     vertices + sizeof(vertices) / sizeof(vertices[0]));
-    // std::vector<int> indexVector(
-    //     indices,
-    //     indices + sizeof(indices) / sizeof(indices[0]));
+    OBJParser parser;
+    OBJData data = parser.parse("resources/teapot2.obj");
+
+    UVMapper uvMapper;
+    uvMapper.generate(data);
+
+    MeshBuilder builder;
+    const Mesh mesh = builder.build(data);
+
+    std::vector<Vertex> vertices;
+    std::vector<int> indices;
+
+    for (const SubMesh& subMesh : mesh.subMeshes)
+    {
+        const std::size_t offset = vertices.size();
+        vertices.insert(vertices.end(), subMesh.vertices.begin(), subMesh.vertices.end());
+
+        for (unsigned int index : subMesh.indices)
+            indices.push_back(static_cast<int>(index + offset));
+    }
 
     Scop scop(vertices, indices, image);
-
     scop.loop();
-        
+
     return 0;
 }
 

@@ -17,6 +17,7 @@ public:
 
     bool getKeyPressed(int key) const;
     bool getKeyReleased(int key) const;
+    void resetMouseState();
 
     Vec2 calculateMouseDelta(float xpos, float ypos);
 };

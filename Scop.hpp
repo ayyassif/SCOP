@@ -10,13 +10,14 @@
 #include <cstddef>
 #include <vector>
 
-#include "ObjParser.hpp"
+// #include "ObjParser.hpp"
 #include "ppm.hpp"
 #include "Shader.hpp"
 #include "math/Math.hpp"
+#include "mesh/Vertex.hpp"
 #include "Camera.hpp"
 #include "Input.hpp"
-#include "ObjParser.hpp"
+// #include "ObjParser.hpp"
 
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
