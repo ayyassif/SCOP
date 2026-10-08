@@ -13,7 +13,7 @@
 
 namespace
 {
-	const float chartAngle = Math::radians(55.0f);
+	const float chartAngle = Math::radians(68.34f);
 	const float atlasMargin = 0.04f;
 	const double lscmEpsilon = 1e-12;
 	const double solveEpsilon = 1e-14;
@@ -747,118 +747,120 @@ namespace
 
 		appendChartUVs(data, chart, solution);
 	}
-}
 
-void UVMapper::generate(OBJData& data)
-{
-	std::vector<int> needsUV(data.faces.size(), 0);
-	std::vector<Vec3> faceNormals(data.faces.size(), Vec3(0.0f, 0.0f, 0.0f));
-	for (std::size_t faceIndex = 0; faceIndex < data.faces.size(); ++faceIndex)
+	struct UVGenerationData
 	{
-		const OBJFace& face = data.faces[faceIndex];
-		for (const OBJIndex& corner : face.vertices)
+		std::vector<bool> needsUV;
+		std::vector<Vec3> faceNormals;
+	};
+
+	UVGenerationData collectUVGenerationData(const OBJData& data)
+	{
+		UVGenerationData result;
+		result.needsUV.assign(data.faces.size(), false);
+		result.faceNormals.assign(data.faces.size(), Vec3(0.0f, 0.0f, 0.0f));
+		for (std::size_t faceIndex = 0; faceIndex < data.faces.size(); ++faceIndex)
 		{
-			if (!validTexcoord(data, corner.texcoord))
+			const OBJFace& face = data.faces[faceIndex];
+			for (const OBJIndex& corner : face.vertices)
 			{
-				needsUV[faceIndex] = 1;
-				break;
+				if (!validTexcoord(data, corner.texcoord))
+				{
+					result.needsUV[faceIndex] = true;
+					break;
+				}
+			}
+			result.faceNormals[faceIndex] = faceNormal(data, face);
+		}
+		return result;
+	}
+
+	std::vector<std::vector<int>> buildCharts(const OBJData& data,
+		const std::vector<bool>& needsUV, const std::vector<Vec3>& faceNormals)
+	{
+		std::map<EdgeKey, std::vector<int>> edgeMap;
+		for (std::size_t faceIndex = 0; faceIndex < data.faces.size(); ++faceIndex)
+		{
+			if (!needsUV[faceIndex])
+				continue;
+
+			const OBJFace& face = data.faces[faceIndex];
+			for (std::size_t corner = 0; corner < face.vertices.size(); ++corner)
+			{
+				const std::size_t next = (corner + 1) % face.vertices.size();
+				const int first = face.vertices[corner].position;
+				const int second = face.vertices[next].position;
+				const EdgeKey key{std::min(first, second), std::max(first, second)};
+				edgeMap[key].push_back(static_cast<int>(faceIndex));
 			}
 		}
-		faceNormals[faceIndex] = faceNormal(data, face);
-	}
 
-	bool anyMissing = false;
-	for (int flag : needsUV)
-		anyMissing = anyMissing || (flag != 0);
-	if (!anyMissing)
-		return;
-
-	std::map<EdgeKey, std::vector<int>> edgeMap;
-	for (std::size_t faceIndex = 0; faceIndex < data.faces.size(); ++faceIndex)
-	{
-		if (needsUV[faceIndex] == 0)
-			continue;
-
-		const OBJFace& face = data.faces[faceIndex];
-		for (std::size_t corner = 0; corner < face.vertices.size(); ++corner)
+		std::vector<std::vector<int>> adjacency(data.faces.size());
+		for (const auto& entry : edgeMap)
 		{
-			const std::size_t next = (corner + 1) % face.vertices.size();
-			const int first = face.vertices[corner].position;
-			const int second = face.vertices[next].position;
-			const EdgeKey key{std::min(first, second), std::max(first, second)};
-			edgeMap[key].push_back(static_cast<int>(faceIndex));
-		}
-	}
+			const std::vector<int>& faces = entry.second;
+			if (faces.size() != 2)
+				continue;
 
-	std::vector<std::vector<int>> adjacency(data.faces.size());
-	for (const auto& entry : edgeMap)
-	{
-		const std::vector<int>& faces = entry.second;
-		if (faces.size() != 2)
-			continue;
-
-		const int firstFace = faces[0];
-		const int secondFace = faces[1];
-		const float dot = faceNormals[firstFace].dot(faceNormals[secondFace]);
-		const float threshold = std::cos(chartAngle);
-		if (dot >= threshold)
-		{
-			adjacency[firstFace].push_back(secondFace);
-			adjacency[secondFace].push_back(firstFace);
-		}
-	}
-
-	std::vector<int> chartId(data.faces.size(), -1);
-	std::vector<std::vector<int>> charts;
-	for (std::size_t faceIndex = 0; faceIndex < data.faces.size(); ++faceIndex)
-	{
-		if (needsUV[faceIndex] == 0 || chartId[faceIndex] != -1)
-			continue;
-
-		std::vector<int> queue;
-		queue.push_back(static_cast<int>(faceIndex));
-		chartId[faceIndex] = static_cast<int>(charts.size());
-		std::vector<int> chart;
-		while (!queue.empty())
-		{
-			const int current = queue.back();
-			queue.pop_back();
-			chart.push_back(current);
-			for (int neighbor : adjacency[current])
+			const int firstFace = faces[0];
+			const int secondFace = faces[1];
+			const float dot = faceNormals[firstFace].dot(faceNormals[secondFace]);
+			if (dot >= std::cos(chartAngle))
 			{
-				if (needsUV[neighbor] == 0 || chartId[neighbor] != -1)
-					continue;
-				chartId[neighbor] = chartId[faceIndex];
-				queue.push_back(neighbor);
+				adjacency[firstFace].push_back(secondFace);
+				adjacency[secondFace].push_back(firstFace);
 			}
 		}
-		charts.push_back(chart);
+
+		std::vector<int> chartId(data.faces.size(), -1);
+		std::vector<std::vector<int>> charts;
+		for (std::size_t faceIndex = 0; faceIndex < data.faces.size(); ++faceIndex)
+		{
+			if (!needsUV[faceIndex] || chartId[faceIndex] != -1)
+				continue;
+
+			std::vector<int> queue(1, static_cast<int>(faceIndex));
+			chartId[faceIndex] = static_cast<int>(charts.size());
+			std::vector<int> chart;
+			while (!queue.empty())
+			{
+				const int current = queue.back();
+				queue.pop_back();
+				chart.push_back(current);
+				for (int neighbor : adjacency[current])
+				{
+					if (!needsUV[neighbor] || chartId[neighbor] != -1)
+						continue;
+					chartId[neighbor] = chartId[faceIndex];
+					queue.push_back(neighbor);
+				}
+			}
+			charts.push_back(chart);
+		}
+		return charts;
 	}
 
-	for (const std::vector<int>& chartFaces : charts)
+	void generateChartUVs(OBJData& data, const std::vector<int>& chartFaces,
+		const std::vector<Vec3>& faceNormals)
 	{
-		if (chartFaces.empty())
-			continue;
-
-		Vec3 chartNormal(0.0f, 0.0f, 0.0f);
+		Vec3 chartNormal;
 		for (int faceIndex : chartFaces)
 			chartNormal += faceNormals[faceIndex];
 		if (chartNormal.length() <= 1e-6f)
 			chartNormal = Vec3(0.0f, 0.0f, 1.0f);
 		chartNormal = safeNormalize(chartNormal);
 
-		Vec3 reference = std::fabs(chartNormal.x) > std::fabs(chartNormal.y)
+		const Vec3 reference = std::fabs(chartNormal.x) > std::fabs(chartNormal.y)
 			? Vec3(0.0f, 1.0f, 0.0f)
 			: Vec3(1.0f, 0.0f, 0.0f);
-		Vec3 tangent = safeNormalize(reference - chartNormal * chartNormal.dot(reference));
-		Vec3 bitangent = safeNormalize(chartNormal.cross(tangent));
+		const Vec3 tangent = safeNormalize(reference - chartNormal * chartNormal.dot(reference));
+		const Vec3 bitangent = safeNormalize(chartNormal.cross(tangent));
 
 		std::map<int, Vec2> uvByPosition;
 		std::vector<int> uniquePositions;
 		for (int faceIndex : chartFaces)
 		{
-			const OBJFace& face = data.faces[faceIndex];
-			for (const OBJIndex& corner : face.vertices)
+			for (const OBJIndex& corner : data.faces[faceIndex].vertices)
 			{
 				if (uvByPosition.find(corner.position) != uvByPosition.end())
 					continue;
@@ -867,11 +869,10 @@ void UVMapper::generate(OBJData& data)
 			}
 		}
 
-		Vec3 centroid(0.0f, 0.0f, 0.0f);
+		Vec3 centroid;
 		for (int positionIndex : uniquePositions)
 			centroid += data.positions[positionIndex];
-		const float invCount = 1.0f / std::max(1.0f, static_cast<float>(uniquePositions.size()));
-		centroid = centroid * invCount;
+		centroid = centroid * (1.0f / std::max(1.0f, static_cast<float>(uniquePositions.size())));
 
 		float minU = std::numeric_limits<float>::max();
 		float maxU = -std::numeric_limits<float>::max();
@@ -892,11 +893,8 @@ void UVMapper::generate(OBJData& data)
 		const float rangeV = std::max(maxV - minV, 1.0e-4f);
 		for (int positionIndex : uniquePositions)
 		{
-			Vec2 projected = uvByPosition[positionIndex];
-			Vec2 normalized(
-				(projected.x - minU) / rangeU,
-				(projected.y - minV) / rangeV);
-			// Rotate the texture 90 degrees clockwise in UV space.
+			const Vec2 projected = uvByPosition[positionIndex];
+			const Vec2 normalized((projected.x - minU) / rangeU, (projected.y - minV) / rangeV);
 			uvByPosition[positionIndex] = Vec2(1.0f - normalized.y, normalized.x);
 		}
 
@@ -916,5 +914,25 @@ void UVMapper::generate(OBJData& data)
 				corner.texcoord = texcoordIndexByPosition[corner.position];
 			}
 		}
+	}
+}
+
+void UVMapper::generate(OBJData& data)
+{
+	const UVGenerationData generationData = collectUVGenerationData(data);
+
+	bool anyMissing = false;
+	for (bool flag : generationData.needsUV)
+		anyMissing = anyMissing || (flag != false);
+	if (!anyMissing)
+		return;
+
+	const std::vector<std::vector<int>> charts = buildCharts(data, generationData.needsUV, generationData.faceNormals);
+
+	for (const std::vector<int>& chartFaces : charts)
+	{
+		if (chartFaces.empty())
+			continue;
+		generateChartUVs(data, chartFaces, generationData.faceNormals);
 	}
 }
