@@ -29,9 +29,9 @@ public:
     Vec3T(T value) : x(value), y(value), z(value) {}
     Vec3T(T x_, T y_, T z_) : x(x_), y(y_), z(z_) {}
 
-    static Vec3T normalize(Vec3T v)
+    static Vec3T normalized(Vec3T v, const Vec3T& fallback = Vec3T())
     {
-        return v.normalize();
+        return v.normalize(fallback);
     }
 
     T length() const
@@ -39,11 +39,11 @@ public:
         return static_cast<T>(std::sqrt(dot(*this)));
     }
 
-    Vec3T normalize() const
+    Vec3T normalize(const Vec3T& fallback = Vec3T()) const
     {
         const T len = length();
         if (len == T(0)) {
-            return Vec3T();
+            return fallback;
         }
         return *this / len;
     }

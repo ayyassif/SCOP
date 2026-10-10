@@ -6,10 +6,10 @@
 int main()
 {
     PPM image;
-    image.load("textures/awesomeface.ppm");
+    image.load("textures/patrick.ppm");
 
     OBJParser parser;
-    OBJData data = parser.parse("resources/teapot2.obj");
+    OBJData data = parser.parse("resources/teapot.obj");
 
     UVMapper uvMapper;
     uvMapper.generate(data);

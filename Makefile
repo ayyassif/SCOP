@@ -6,10 +6,10 @@ CXXFLAGS := -O2 -std=c++17
 LDFLAGS :=
 LDLIBS := -lglfw -lGL -ldl
 
-SRC_DIRS := . math parser glad/src
+SRC_DIRS := . math glad/src parser mesh
 BUILD_DIR := build
 
-SRCS := $(filter-out ./main-copy.cpp,$(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp)))
+SRCS := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp))
 SRCS += $(wildcard glad/src/*.c)
 
 OBJS := $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(filter %.cpp,$(SRCS)))

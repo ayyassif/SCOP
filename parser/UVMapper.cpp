@@ -13,10 +13,11 @@
 
 namespace
 {
-	const float chartAngle = Math::radians(68.34f);
-	const float atlasMargin = 0.04f;
+	const float	 chartAngle = Math::radians(68.34f);
+	const float  atlasMargin = 0.04f;
 	const double lscmEpsilon = 1e-12;
 	const double solveEpsilon = 1e-14;
+	const Vec3	 fallback(0.0f, 0.0f, 1.0f);
 
 	struct EdgeKey
 	{
@@ -85,14 +86,6 @@ namespace
 	{
 		return static_cast<double>(first.x) * static_cast<double>(second.y) -
 			static_cast<double>(first.y) * static_cast<double>(second.x);
-	}
-
-	Vec3 safeNormalize(const Vec3& value, const Vec3& fallback = Vec3(0.0f, 0.0f, 1.0f))
-	{
-		const float length = value.length();
-		if (length <= 0.0f)
-			return fallback;
-		return value / length;
 	}
 
 	Vec3 faceNormal(const OBJData& data, const OBJFace& face)
@@ -497,22 +490,22 @@ namespace
 			const Vec3& p1 = solution.vertices[localIndices[1]].positionValue;
 			const Vec3& p2 = solution.vertices[localIndices[2]].positionValue;
 
-			const Vec3 edge01 = p1 - p0;
-			const Vec3 edge02 = p2 - p0;
-			const double length01 = edge01.length();
+			const Vec3 edge1 = p1 - p0;
+			const Vec3 edge2 = p2 - p0;
+			const double length01 = edge1.length();
 			if (length01 <= lscmEpsilon)
 				continue;
 
-			const Vec3 triangleNormal = edge01.cross(edge02);
+			const Vec3 triangleNormal = edge1.cross(edge2);
 			const double normalLength = triangleNormal.length();
 			if (normalLength <= lscmEpsilon)
 				continue;
 
-			const Vec3 tangent = safeNormalize(edge01);
-			const Vec3 bitangent = safeNormalize(triangleNormal.cross(tangent));
+			const Vec3 tangent = edge1.normalize(fallback);
+			const Vec3 bitangent = triangleNormal.cross(tangent).normalize(fallback);
 			const Vec2 local0(0.0f, 0.0f);
 			const Vec2 local1(static_cast<float>(length01), 0.0f);
-			const Vec2 local2(static_cast<float>(edge02.dot(tangent)), static_cast<float>(edge02.dot(bitangent)));
+			const Vec2 local2(static_cast<float>(edge2.dot(tangent)), static_cast<float>(edge2.dot(bitangent)));
 			const double twiceArea = cross2(local1 - local0, local2 - local0);
 			if (std::fabs(twiceArea) <= lscmEpsilon)
 				continue;
@@ -607,8 +600,8 @@ namespace
 
 		const Vec3 normal = chart.normal.length() == 0.0f ? Vec3(0.0f, 0.0f, 1.0f) : chart.normal;
 		const Vec3 reference = std::fabs(normal.x) < 0.8f ? Vec3(1.0f, 0.0f, 0.0f) : Vec3(0.0f, 1.0f, 0.0f);
-		const Vec3 tangent = safeNormalize(reference.cross(normal));
-		const Vec3 bitangent = safeNormalize(normal.cross(tangent));
+		const Vec3 tangent = reference.cross(normal).normalize(fallback);
+		const Vec3 bitangent = normal.cross(tangent).normalize(fallback);
 
 		Vec3 origin = solution.vertices.front().positionValue;
 		for (const ChartVertex& vertex : solution.vertices)
@@ -775,7 +768,7 @@ namespace
 		return result;
 	}
 
-	std::vector<std::vector<int>> buildCharts(const OBJData& data,
+	Charts buildCharts(const OBJData& data,
 		const std::vector<bool>& needsUV, const std::vector<Vec3>& faceNormals)
 	{
 		std::map<EdgeKey, std::vector<int>> edgeMap;
@@ -813,26 +806,26 @@ namespace
 		}
 
 		std::vector<int> chartId(data.faces.size(), -1);
-		std::vector<std::vector<int>> charts;
+		Charts charts;
 		for (std::size_t faceIndex = 0; faceIndex < data.faces.size(); ++faceIndex)
 		{
 			if (!needsUV[faceIndex] || chartId[faceIndex] != -1)
 				continue;
 
-			std::vector<int> queue(1, static_cast<int>(faceIndex));
+			std::vector<int> pendingFaces(1, static_cast<int>(faceIndex));
 			chartId[faceIndex] = static_cast<int>(charts.size());
 			std::vector<int> chart;
-			while (!queue.empty())
+			while (!pendingFaces.empty())
 			{
-				const int current = queue.back();
-				queue.pop_back();
+				const int current = pendingFaces.back();
+				pendingFaces.pop_back();
 				chart.push_back(current);
 				for (int neighbor : adjacency[current])
 				{
 					if (!needsUV[neighbor] || chartId[neighbor] != -1)
 						continue;
 					chartId[neighbor] = chartId[faceIndex];
-					queue.push_back(neighbor);
+					pendingFaces.push_back(neighbor);
 				}
 			}
 			charts.push_back(chart);
@@ -848,13 +841,13 @@ namespace
 			chartNormal += faceNormals[faceIndex];
 		if (chartNormal.length() <= 1e-6f)
 			chartNormal = Vec3(0.0f, 0.0f, 1.0f);
-		chartNormal = safeNormalize(chartNormal);
+		chartNormal = chartNormal.normalize(fallback);
 
 		const Vec3 reference = std::fabs(chartNormal.x) > std::fabs(chartNormal.y)
 			? Vec3(0.0f, 1.0f, 0.0f)
 			: Vec3(1.0f, 0.0f, 0.0f);
-		const Vec3 tangent = safeNormalize(reference - chartNormal * chartNormal.dot(reference));
-		const Vec3 bitangent = safeNormalize(chartNormal.cross(tangent));
+		const Vec3 tangent = (reference - chartNormal * chartNormal.dot(reference)).normalize(fallback);
+		const Vec3 bitangent = (chartNormal.cross(tangent)).normalize(fallback);
 
 		std::map<int, Vec2> uvByPosition;
 		std::vector<int> uniquePositions;
@@ -873,7 +866,7 @@ namespace
 		for (int positionIndex : uniquePositions)
 			centroid += data.positions[positionIndex];
 		centroid = centroid * (1.0f / std::max(1.0f, static_cast<float>(uniquePositions.size())));
-
+		// <<<<------------------->>>
 		float minU = std::numeric_limits<float>::max();
 		float maxU = -std::numeric_limits<float>::max();
 		float minV = std::numeric_limits<float>::max();
@@ -927,12 +920,8 @@ void UVMapper::generate(OBJData& data)
 	if (!anyMissing)
 		return;
 
-	const std::vector<std::vector<int>> charts = buildCharts(data, generationData.needsUV, generationData.faceNormals);
+	const Charts charts = buildCharts(data, generationData.needsUV, generationData.faceNormals);
 
 	for (const std::vector<int>& chartFaces : charts)
-	{
-		if (chartFaces.empty())
-			continue;
 		generateChartUVs(data, chartFaces, generationData.faceNormals);
-	}
 }
