@@ -6,10 +6,10 @@
 int main()
 {
     PPM image;
-    image.load("textures/patrick.ppm");
+    image.load("textures/spincat.ppm");
 
     OBJParser parser;
-    OBJData data = parser.parse("resources/teapot.obj");
+    OBJData data = parser.parse("resources/spincat_fixed.obj");
 
     UVMapper uvMapper;
     uvMapper.generate(data);
@@ -18,7 +18,7 @@ int main()
     const Mesh mesh = builder.build(data);
 
     std::vector<Vertex> vertices;
-    std::vector<int> indices;
+    std::vector<unsigned int> indices;
 
     for (const SubMesh& subMesh : mesh.subMeshes)
     {
@@ -26,7 +26,7 @@ int main()
         vertices.insert(vertices.end(), subMesh.vertices.begin(), subMesh.vertices.end());
 
         for (unsigned int index : subMesh.indices)
-            indices.push_back(static_cast<int>(index + offset));
+            indices.push_back(static_cast<unsigned int>(index + offset));
     }
 
     Scop scop(vertices, indices, image);

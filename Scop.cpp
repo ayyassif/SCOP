@@ -1,5 +1,8 @@
 #include "Scop.hpp"
 
+#include <algorithm>
+#include <limits>
+
 Camera cam(Vec3(0.0f, 0.0f,  3.0f), Vec3(0.0f, 1.0f,  0.0f));
 GLFWwindow *window = initiate();
 Input input(window);
@@ -7,6 +10,43 @@ namespace
 {
     bool gMouseCaptured = true;
     bool gTabPressedLastFrame = false;
+    bool gCameraModePressedLastFrame = false;
+
+    enum class RenderMode
+    {
+        Texture = 0,
+        Grey = 1,
+        ChartColors = 2
+    };
+
+    void frameCameraOnVertices(const std::vector<Vertex>& vertices)
+    {
+        if (vertices.empty())
+            return;
+
+        Vec3 minimum(
+            std::numeric_limits<float>::max(),
+            std::numeric_limits<float>::max(),
+            std::numeric_limits<float>::max());
+        Vec3 maximum(
+            std::numeric_limits<float>::lowest(),
+            std::numeric_limits<float>::lowest(),
+            std::numeric_limits<float>::lowest());
+
+        for (const Vertex& vertex : vertices)
+        {
+            minimum.x = std::min(minimum.x, vertex.position.x);
+            minimum.y = std::min(minimum.y, vertex.position.y);
+            minimum.z = std::min(minimum.z, vertex.position.z);
+            maximum.x = std::max(maximum.x, vertex.position.x);
+            maximum.y = std::max(maximum.y, vertex.position.y);
+            maximum.z = std::max(maximum.z, vertex.position.z);
+        }
+
+        const Vec3 center = (minimum + maximum) * 0.5f;
+        const float radius = (maximum - minimum).length() * 0.5f;
+        cam.FrameOn(center, radius);
+    }
 }
 
  // <------------------------------------------------------------------------------------->
@@ -15,11 +55,12 @@ namespace
 
 Scop::Scop(
     const std::vector<Vertex>& vertices,
-    const std::vector<int>& indices,
+    const std::vector<unsigned int>& indices,
     const PPM &image
 )
 {
     indexCount = indices.size();
+    frameCameraOnVertices(vertices);
     setupVertexBuffers(vertices, indices);
     setupTexture(image);
 }
@@ -32,6 +73,7 @@ void Scop::setupTexture(const PPM &image)
 
     glGenTextures(1, &texture); 
     glBindTexture(GL_TEXTURE_2D, texture);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     // will change this later for changing textures when needed
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
@@ -57,7 +99,7 @@ void Scop::setupTexture(const PPM &image)
 
 void Scop::setupVertexBuffers(
     const std::vector<Vertex>& vertices,
-    const std::vector<int>& indices
+    const std::vector<unsigned int>& indices
 )
 {
     glGenVertexArrays(1, &VAO);
@@ -76,7 +118,7 @@ void Scop::setupVertexBuffers(
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(
         GL_ELEMENT_ARRAY_BUFFER,
-        indices.size() * sizeof(int),
+        indices.size() * sizeof(unsigned int),
         indices.data(), GL_STATIC_DRAW
     );
 
@@ -87,6 +129,9 @@ void Scop::setupVertexBuffers(
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           reinterpret_cast<void*>(offsetof(Vertex, texcoord) + offsetof(Vec2, x)));
     glEnableVertexAttribArray(1);
+    glVertexAttribIPointer(2, 1, GL_INT, sizeof(Vertex),
+                           reinterpret_cast<void*>(offsetof(Vertex, chartIndex)));
+    glEnableVertexAttribArray(2);
     //  <---->
 }
 
@@ -96,7 +141,7 @@ void Scop::loop()
 
     shader.use();
     shader.setInt("Texture", 0);
-    bool useTexture = true;
+    RenderMode renderMode = RenderMode::Grey;
     bool mKeyPressedLastFrame = false;
     while(!glfwWindowShouldClose(window))
     {
@@ -105,7 +150,7 @@ void Scop::loop()
 
         const bool mKeyPressed = input.getKeyPressed(GLFW_KEY_M);
         if (mKeyPressed && !mKeyPressedLastFrame)
-            useTexture = !useTexture;
+            renderMode = static_cast<RenderMode>((static_cast<int>(renderMode) + 1) % 3);
         mKeyPressedLastFrame = mKeyPressed;
 
         // rendering commands
@@ -113,15 +158,21 @@ void Scop::loop()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader.use();
-        shader.setBool("useTexture", useTexture);
+        shader.setInt("renderMode", static_cast<int>(renderMode));
 
-        Mat4 projection = Mat4::perspective(Math::radians(cam.Zoom), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 100.0f);
+        constexpr float nearPlane = 0.1f;
+        constexpr float farPlane = 1000.0f;
+        Mat4 projection = Mat4::perspective(
+            Math::radians(cam.Zoom),
+            (float)SCR_WIDTH / (float)SCR_HEIGHT,
+            nearPlane,
+            farPlane);
 
         glBindVertexArray(VAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
 
-        Mat4 model = Mat4::model(Vec3( 0.0f,  0.0f,  0.0f), Math::radians(0), Vec3(1.0f, 0.3f, 0.5f));
+        Mat4 model = Mat4::model(Vec3(0.0f), Math::radians(0), Vec3(1.0f), Vec3(1.0f));
 
         shader.setMat4("mvp", projection
                                 * cam.GetViewMatrix()
@@ -215,6 +266,17 @@ void processInput(GLFWwindow *window, Input &input, Camera &cam)
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
     gTabPressedLastFrame = tabHeld;
+
+    const bool cameraModePressed = input.getKeyPressed(GLFW_KEY_C);
+    if (cameraModePressed && !gCameraModePressedLastFrame)
+    {
+        const CameraMode nextMode = cam.GetMode() == CameraMode::Orbit
+            ? CameraMode::Free
+            : CameraMode::Orbit;
+        cam.SetMode(nextMode);
+        input.resetMouseState();
+    }
+    gCameraModePressedLastFrame = cameraModePressed;
 
     if (!gMouseCaptured)
         return;

@@ -7,6 +7,7 @@ struct Vertex
 {
     Vec3 position;
     Vec2 texcoord;
+    int chartIndex;
 };
 
 #endif

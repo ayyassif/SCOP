@@ -10,11 +10,13 @@ namespace
     {
         int position;
         int texcoord;
+        int chartIndex;
 
         bool operator<(const VertexKey& other) const
         {
             return position < other.position ||
-                (position == other.position && texcoord < other.texcoord);
+                (position == other.position && (texcoord < other.texcoord ||
+                    (texcoord == other.texcoord && chartIndex < other.chartIndex)));
         }
     };
 
@@ -54,7 +56,8 @@ namespace
     {
         validatePosition(data, corner.position, faceIndex, cornerIndex);
         const int texcoord = resolveTexcoord(data, corner.texcoord, faceIndex, cornerIndex);
-        const VertexKey key{corner.position, texcoord};
+        const int chartIndex = data.faces[faceIndex].chartIndex;
+        const VertexKey key{corner.position, texcoord, chartIndex};
         const auto existing = vertices.find(key);
         if (existing != vertices.end())
             return existing->second;
@@ -62,7 +65,7 @@ namespace
         const Vec3& position = data.positions[corner.position];
         const Vec2 uv = texcoord >= 0 ? data.texcoords[texcoord] : Vec2();
         const unsigned int index = static_cast<unsigned int>(subMesh.vertices.size());
-        subMesh.vertices.push_back(Vertex{position, uv});
+        subMesh.vertices.push_back(Vertex{position, uv, chartIndex});
         vertices[key] = index;
         return index;
     }

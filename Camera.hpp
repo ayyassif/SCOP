@@ -14,6 +14,12 @@ enum Camera_Movement {
     SPRINT_OFF
 };
 
+enum class CameraMode
+{
+    Orbit,
+    Free
+};
+
 #define YAW         -90.0f
 #define PITCH        0.0f
 #define SPEED        2.5f
@@ -51,14 +57,27 @@ public:
     );
 
     Mat4 GetViewMatrix() const;
+    void FrameOn(const Vec3& center, float radius);
+    void SetMode(CameraMode newMode);
+    CameraMode GetMode() const;
     void ProcessKeyboard(Camera_Movement direction, float deltaTime);
     void ProcessMouseMovement(Vec2 offset, bool constrainPitch = true);
     void ProcessMouseScroll(float yoffset);
 
 private:
     bool isSprinting;
+    CameraMode mode;
+    Vec3 orbitTarget;
+    float orbitDistance;
+    float maxOrbitDistance;
+    Vec3 initialPosition;
+    float initialYaw;
+    float initialPitch;
+    float initialZoom;
 
     void updateCameraVectors();
+    void updateOrbitPosition();
+    void resetToInitialView();
 };
 
 #endif

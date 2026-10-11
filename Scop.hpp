@@ -46,13 +46,13 @@ private:
     void setupTexture(const PPM &image);
     void setupVertexBuffers(
         const std::vector<Vertex>& vertices,
-        const std::vector<int>& indices
+        const std::vector<unsigned int>& indices
     );
 
 public:
     Scop(
         const std::vector<Vertex>& vertices,
-        const std::vector<int>& indices,
+        const std::vector<unsigned int>& indices,
         const PPM &image
     );
 

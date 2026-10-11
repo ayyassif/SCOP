@@ -16,6 +16,7 @@ struct OBJFace
 {
     std::vector<OBJIndex> vertices;
     std::string materialName;
+    int chartIndex = -1;
 };
 
 struct OBJData

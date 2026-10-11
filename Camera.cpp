@@ -1,5 +1,7 @@
 #include "Camera.hpp"
 
+#include <algorithm>
+
 Camera::Camera()
     : Camera(
         Vec3(0.0f, 0.0f, 0.0f),
@@ -32,7 +34,15 @@ Camera::Camera(
     Position(position),
     WorldUp(up),
     Yaw(yaw), Pitch(pitch),
-    isSprinting(false)
+    isSprinting(false),
+    mode(CameraMode::Orbit),
+    orbitTarget(),
+    orbitDistance(3.0f),
+    maxOrbitDistance(15.0f),
+    initialPosition(position),
+    initialYaw(yaw),
+    initialPitch(pitch),
+    initialZoom(ZOOM)
 {
     updateCameraVectors();
 }
@@ -40,6 +50,46 @@ Camera::Camera(
 Mat4 Camera::GetViewMatrix() const
 {
     return Mat4::lookAt(Position, Position + Front, Up);
+}
+
+void Camera::FrameOn(const Vec3& center, float radius)
+{
+    const float safeRadius = radius > 0.0f ? radius : 1.0f;
+    const float halfFov = Math::radians(Zoom) * 0.5f;
+    const float distance = safeRadius / std::sin(halfFov) * 1.2f;
+
+    orbitTarget = center;
+    orbitDistance = distance;
+    maxOrbitDistance = distance * 3.0f;
+    initialPosition = center + Vec3(0.0f, 0.0f, distance);
+    initialYaw = -90.0f;
+    initialPitch = 0.0f;
+    initialZoom = Zoom;
+    resetToInitialView();
+}
+
+void Camera::SetMode(CameraMode newMode)
+{
+    if (mode == newMode)
+        return;
+
+    mode = newMode;
+    resetToInitialView();
+}
+
+CameraMode Camera::GetMode() const
+{
+    return mode;
+}
+
+void Camera::resetToInitialView()
+{
+    Position = initialPosition;
+    Yaw = initialYaw;
+    Pitch = initialPitch;
+    Zoom = initialZoom;
+    orbitDistance = (initialPosition - orbitTarget).length();
+    updateCameraVectors();
 }
 
 void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
@@ -58,6 +108,41 @@ void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
 
     const float velocity = MovementSpeed * deltaTime
         * (isSprinting ? SPRINT : 1.0f);
+
+    if (mode == CameraMode::Orbit)
+    {
+        switch (direction)
+        {
+            case FORWARD:
+                orbitDistance = std::max(0.1f, orbitDistance - velocity);
+                break;
+            case BACKWARD:
+                orbitDistance = std::min(maxOrbitDistance, orbitDistance + velocity);
+                break;
+            case LEFT:
+                Yaw -= velocity * 20.0f;
+                break;
+            case RIGHT:
+                Yaw += velocity * 20.0f;
+                break;
+            case UP:
+                Pitch += velocity * 20.0f;
+                break;
+            case DOWN:
+                Pitch -= velocity * 20.0f;
+                break;
+            default:
+                return;
+        }
+
+        if (Pitch > 89.0f)
+            Pitch = 89.0f;
+        if (Pitch < -89.0f)
+            Pitch = -89.0f;
+        updateCameraVectors();
+        Position = orbitTarget - Front * orbitDistance;
+        return;
+    }
 
     switch (direction)
     {
@@ -100,10 +185,20 @@ void Camera::ProcessMouseMovement(Vec2 offset, bool constrainPitch)
             Pitch = -89.0f;
     }
     updateCameraVectors();
+    if (mode == CameraMode::Orbit)
+        updateOrbitPosition();
 }
 
 void Camera::ProcessMouseScroll(float yoffset)
 {
+    if (mode == CameraMode::Orbit)
+    {
+        orbitDistance = std::clamp(orbitDistance - yoffset * MovementSpeed,
+                                   0.1f, maxOrbitDistance);
+        Position = orbitTarget - Front * orbitDistance;
+        return;
+    }
+
     Zoom -= yoffset;
     if (Zoom < 1.0f)
         Zoom = 1.0f;
@@ -124,4 +219,9 @@ void Camera::updateCameraVectors()
 
     Right = Front.cross(WorldUp).normalize();
     Up    = Right.cross(Front).normalize();
+}
+
+void Camera::updateOrbitPosition()
+{
+    Position = orbitTarget - Front * orbitDistance;
 }

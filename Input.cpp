@@ -31,18 +31,19 @@ void Input::resetMouseState()
 
 Vec2 Input::calculateMouseDelta(float xpos, float ypos)
 {
-    Vec2 offset;
-    offset.x = xpos - lastMouse.x;
-    offset.y = lastMouse.y - ypos;
-    lastMouse.x = xpos;
-    lastMouse.y = ypos;
-
     if (firstMouse)
     {
         lastMouse.x = xpos;
         lastMouse.y = ypos;
         firstMouse = false;
+        return Vec2();
     }
+
+    Vec2 offset;
+    offset.x = xpos - lastMouse.x;
+    offset.y = lastMouse.y - ypos;
+    lastMouse.x = xpos;
+    lastMouse.y = ypos;
 
     return offset;
 }
