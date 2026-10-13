@@ -14,6 +14,8 @@ int main(int ac, char *av[])
             throw std::invalid_argument("Input must be a valid .obj file and a valid .ppm file.");
     
         window = initiate();
+        if (window == nullptr)
+            throw std::runtime_error("Window initialization failed");
         input = Input(window);
 
         DEBUG::INFO << "Loading texture: " << av[2] << std::endl;
@@ -52,25 +54,42 @@ int main(int ac, char *av[])
             DEBUG::INFO << "Uploading " << vertices.size() << " vertices and "
                     << indices.size() << " indices" << std::endl;
 
-        Scop scop(vertices, indices, image);
+        {
+            Scop scop(vertices, indices, image);
 
-        
-        Debugger::printControls();
-        DEBUG::INFO << std::endl;
-        Debugger::printAvailableModes();
-        DEBUG::INFO << std::endl;
+            Debugger::printControls();
+            DEBUG::INFO << std::endl;
+            Debugger::printAvailableModes();
+            DEBUG::INFO << std::endl;
 
-        scop.loop();
+            scop.loop();
+        }
+
+        glfwDestroyWindow(window);
+        window = nullptr;
+        glfwTerminate();
         DEBUG::SUCCESS << "Application closed normally" << std::endl;
     }
     catch (const std::exception& error)
     {
         DEBUG::ERROR << error.what() << std::endl;
+        if (window != nullptr)
+        {
+            glfwDestroyWindow(window);
+            window = nullptr;
+            glfwTerminate();
+        }
         return 1;
     }
     catch (...)
     {
         DEBUG::ERROR << "Unknown error" << std::endl;
+        if (window != nullptr)
+        {
+            glfwDestroyWindow(window);
+            window = nullptr;
+            glfwTerminate();
+        }
         return 1;
     }
 

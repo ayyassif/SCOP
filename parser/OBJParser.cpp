@@ -1,6 +1,7 @@
 #include "OBJParser.hpp"
 
 #include <cstddef>
+#include <cmath>
 #include <fstream>
 #include <limits>
 #include <sstream>
@@ -36,7 +37,7 @@ namespace
 		try
 		{
 			const float value = std::stof(text, &consumed);
-			if (consumed != text.size())
+			if (consumed != text.size() || !std::isfinite(value))
 				throw std::invalid_argument("trailing characters");
 			return value;
 		}

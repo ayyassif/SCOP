@@ -3,15 +3,10 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
-#include <fstream>
-#include <cmath>
 #include <array>
 #include <cstddef>
 #include <vector>
-#include <exception>
 
-// #include "ObjParser.hpp"
 #include "Debugger.hpp"
 #include "ppm.hpp"
 #include "Shader.hpp"
@@ -19,7 +14,6 @@
 #include "mesh/Vertex.hpp"
 #include "Camera.hpp"
 #include "Input.hpp"
-// #include "ObjParser.hpp"
 
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
@@ -29,7 +23,6 @@ extern GLFWwindow *window;
 extern Input input;
 
 GLFWwindow  *initiate();
-std::string readFile(const char* filename);
 void        framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void        processInput(GLFWwindow *window, Input &input, Camera &cam);
 void        mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -57,6 +50,11 @@ public:
         const std::vector<unsigned int>& indices,
         const PPM &image
     );
+
+    ~Scop();
+
+    Scop(const Scop&) = delete;
+    Scop& operator=(const Scop&) = delete;
 
     void loop();
 };

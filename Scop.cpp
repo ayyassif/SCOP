@@ -12,6 +12,8 @@ namespace
     bool gMouseCaptured = true;
     bool gTabPressedLastFrame = false;
     bool gCameraModePressedLastFrame = false;
+    int gFramebufferWidth = static_cast<int>(SCR_WIDTH);
+    int gFramebufferHeight = static_cast<int>(SCR_HEIGHT);
 
     enum class RenderMode
     {
@@ -75,6 +77,14 @@ Scop::Scop(
     setupVertexBuffers(vertices, indices);
     setupTexture(image);
     DEBUG::SUCCESS << "Render resources ready" << std::endl;
+}
+
+Scop::~Scop()
+{
+    glDeleteTextures(1, &texture);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+    glDeleteVertexArrays(1, &VAO);
 }
 
 void Scop::setupTexture(const PPM &image)
@@ -184,7 +194,7 @@ void Scop::loop()
         nKeyPressedLastFrame = nKeyPressed;
 
         // rendering commands
-        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+        glClearColor(0.12f, 0.15f, 0.19f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader.use();
@@ -194,7 +204,8 @@ void Scop::loop()
         constexpr float farPlane = 1000.0f;
         Mat4 projection = Mat4::perspective(
             Math::radians(cam.Zoom),
-            (float)SCR_WIDTH / (float)SCR_HEIGHT,
+            static_cast<float>(gFramebufferWidth) /
+                static_cast<float>(std::max(1, gFramebufferHeight)),
             nearPlane,
             farPlane);
 
@@ -216,7 +227,6 @@ void Scop::loop()
         glfwSwapBuffers(window);
     }
     DEBUG::INFO << "Render loop stopped" << std::endl;
-    glfwTerminate();
 }
 
 
@@ -228,6 +238,8 @@ void Scop::loop()
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+    gFramebufferWidth = width;
+    gFramebufferHeight = height;
     glViewport(0, 0, width, height);
 }
 
@@ -261,6 +273,8 @@ GLFWwindow *initiate()
         glfwTerminate();
         return nullptr;
     }
+    gFramebufferWidth = SCR_WIDTH;
+    gFramebufferHeight = SCR_HEIGHT;
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -271,16 +285,6 @@ GLFWwindow *initiate()
     glEnable(GL_DEPTH_TEST);
     DEBUG::SUCCESS << "OpenGL context ready" << std::endl;
     return (window);
-}
-
-std::string readFile(const char* filename)
-{
-    std::ifstream file(filename);
-
-    return std::string(
-        (std::istreambuf_iterator<char>(file)),
-        std::istreambuf_iterator<char>()
-    );
 }
 
 void processInput(GLFWwindow *window, Input &input, Camera &cam)
