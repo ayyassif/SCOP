@@ -5,11 +5,18 @@
 
 int main()
 {
+    Debugger::printWelcome();
+    DEBUG::INFO << std::endl;
+    Debugger::printControls();
+    DEBUG::INFO << std::endl;
+    Debugger::printAvailableModes();
+    DEBUG::INFO << std::endl;
+
     PPM image;
     image.load("textures/spincat.ppm");
 
     OBJParser parser;
-    OBJData data = parser.parse("resources/spincat_fixed.obj");
+    OBJData data = parser.parse("resources/spincat.obj");
 
     UVMapper uvMapper;
     uvMapper.generate(data);

@@ -6,14 +6,10 @@
 #include "Vec3.hpp"
 #include "Vec4.hpp"
 
-class Quat;
-
 class Mat4
 {
 private:
     float m[4][4];
-
-    friend class Quat;
 
 public:
     float* operator[](int index);

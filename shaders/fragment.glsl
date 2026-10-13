@@ -8,7 +8,12 @@ flat in int chartIndex;
 uniform sampler2D Texture;
 uniform int renderMode;
 
-vec3 chartColor(int chartIndex)
+const int MODE_COLOR = 0;
+const int MODE_TEXTURE = 1;
+const int MODE_GREY = 2;
+const int MODE_CHART = 3;
+
+vec3 colorPicker(int index)
 {
     const vec3 colors[8] = vec3[](
         vec3(0.95, 0.25, 0.25),
@@ -21,24 +26,12 @@ vec3 chartColor(int chartIndex)
         vec3(0.70, 0.85, 0.30)
     );
 
-    return colors[chartIndex % 8];
+    return colors[index % 8];
 }
 
-void main()
+vec3 grayPicker()
 {
-    if (renderMode == 2)
-    {
-        FragColor = vec4(chartColor(max(chartIndex, 0)), 1.0);
-        return;
-    }
-
-    if (renderMode == 0)
-    {
-        FragColor = texture(Texture, texCoord);
-        return;
-    }
-
-    vec3 shades[6] = vec3[](
+    const vec3 shades[6] = vec3[](
         vec3(0.12),
         vec3(0.23),
         vec3(0.35),
@@ -47,6 +40,24 @@ void main()
         vec3(0.82)
     );
 
-    int shadeIndex = int(mod(float(gl_PrimitiveID), 6.0));
-    FragColor = vec4(shades[shadeIndex], 1.0);
+    return shades[gl_PrimitiveID % 6];
+}
+
+void main()
+{
+    switch (renderMode)
+    {
+        case MODE_TEXTURE:
+            FragColor = texture(Texture, texCoord);
+            break;
+        case MODE_GREY:
+            FragColor = vec4(grayPicker(), 1.0);
+            break;
+        case MODE_CHART:
+            FragColor = vec4(colorPicker(max(chartIndex, 0)), 1.0);
+            break;
+        default: //MODE_COLOR
+            FragColor = vec4(colorPicker(gl_PrimitiveID), 1.0);
+            break;
+    }
 } 

@@ -11,6 +11,7 @@
 #include <vector>
 
 // #include "ObjParser.hpp"
+#include "Debugger.hpp"
 #include "ppm.hpp"
 #include "Shader.hpp"
 #include "math/Math.hpp"

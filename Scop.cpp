@@ -14,9 +14,18 @@ namespace
 
     enum class RenderMode
     {
-        Texture = 0,
-        Grey = 1,
-        ChartColors = 2
+        Color = 0,
+        Texture = 1,
+        Grey = 2,
+        ChartColors = 3
+    };
+
+    const std::string renderNames[] =
+    {
+        "Color",
+        "Texture",
+        "Shades of Grey",
+        "Chart Colors"
     };
 
     void frameCameraOnVertices(const std::vector<Vertex>& vertices)
@@ -122,7 +131,6 @@ void Scop::setupVertexBuffers(
         indices.data(), GL_STATIC_DRAW
     );
 
-    // will change this code later if we are adding colors
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           reinterpret_cast<void*>(offsetof(Vertex, position) + offsetof(Vec3, x)));
     glEnableVertexAttribArray(0);
@@ -132,7 +140,6 @@ void Scop::setupVertexBuffers(
     glVertexAttribIPointer(2, 1, GL_INT, sizeof(Vertex),
                            reinterpret_cast<void*>(offsetof(Vertex, chartIndex)));
     glEnableVertexAttribArray(2);
-    //  <---->
 }
 
 void Scop::loop()
@@ -141,7 +148,7 @@ void Scop::loop()
 
     shader.use();
     shader.setInt("Texture", 0);
-    RenderMode renderMode = RenderMode::Grey;
+    RenderMode renderMode = RenderMode::Color;
     bool mKeyPressedLastFrame = false;
     while(!glfwWindowShouldClose(window))
     {
@@ -150,7 +157,10 @@ void Scop::loop()
 
         const bool mKeyPressed = input.getKeyPressed(GLFW_KEY_M);
         if (mKeyPressed && !mKeyPressedLastFrame)
-            renderMode = static_cast<RenderMode>((static_cast<int>(renderMode) + 1) % 3);
+        {
+            renderMode = static_cast<RenderMode>((static_cast<int>(renderMode) + 1) % sizeof(RenderMode));
+            Debugger::renderModeChanged(renderNames[static_cast<int>(renderMode)]);
+        }
         mKeyPressedLastFrame = mKeyPressed;
 
         // rendering commands
@@ -275,6 +285,7 @@ void processInput(GLFWwindow *window, Input &input, Camera &cam)
             : CameraMode::Orbit;
         cam.SetMode(nextMode);
         input.resetMouseState();
+        Debugger::cameraModeChanged(nextMode == CameraMode::Free ? "Free" : "Orbit");
     }
     gCameraModePressedLastFrame = cameraModePressed;
 
