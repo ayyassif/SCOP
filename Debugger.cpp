@@ -81,21 +81,17 @@ void Debugger::printWelcome()
 
 void Debugger::printControls()
 {
-	printControls({
-		{"W / A / S / D", "Move the camera"},
-		{"Mouse", "Look around"},
-		{"M", "Change the render mode"},
-		{"C", "Change camera mode"},
-		{"TAB", "toggle the mouse on/off"},
-		{"ESC", "Exit the application"},
-	});
-}
-
-void Debugger::printControls(std::initializer_list<ControlInfo> controls)
-{
-	DEBUG::INFO << "Controls:" << std::endl;
-	for (const ControlInfo& control : controls)
-		DEBUG::INFO << "  " << control.keys << " - " << control.description << std::endl;
+	DEBUG::INFO << "======================= CONTROLS =======================" << std::endl;
+DEBUG::INFO << "  W / A / S / D   Move the camera" << std::endl;
+DEBUG::INFO << "  SPACE / SHIFT   Move up / down" << std::endl;
+DEBUG::INFO << "  CTRL            Toggle camera speed boost" << std::endl;
+DEBUG::INFO << "  MOUSE           Look around" << std::endl;
+DEBUG::INFO << "  M               Toggle Color / Texture mode" << std::endl;
+DEBUG::INFO << "  N               Toggle Grey / Chart mode" << std::endl;
+DEBUG::INFO << "  C               Switch between Orbit and Free Camera modes" << std::endl;
+DEBUG::INFO << "  TAB             Toggle mouse capture" << std::endl;
+DEBUG::INFO << "  ESC             Exit application" << std::endl;
+DEBUG::INFO << "========================================================" << std::endl;
 }
 
 void Debugger::printAvailableModes()

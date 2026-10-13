@@ -3,41 +3,76 @@
 #include "parser/UVMapper.hpp"
 #include "parser/MeshBuilder.hpp"
 
-int main()
+int main(int ac, char *av[])
 {
-    Debugger::printWelcome();
-    DEBUG::INFO << std::endl;
-    Debugger::printControls();
-    DEBUG::INFO << std::endl;
-    Debugger::printAvailableModes();
-    DEBUG::INFO << std::endl;
-
-    PPM image;
-    image.load("textures/spincat.ppm");
-
-    OBJParser parser;
-    OBJData data = parser.parse("resources/spincat.obj");
-
-    UVMapper uvMapper;
-    uvMapper.generate(data);
-
-    MeshBuilder builder;
-    const Mesh mesh = builder.build(data);
-
-    std::vector<Vertex> vertices;
-    std::vector<unsigned int> indices;
-
-    for (const SubMesh& subMesh : mesh.subMeshes)
+    try
     {
-        const std::size_t offset = vertices.size();
-        vertices.insert(vertices.end(), subMesh.vertices.begin(), subMesh.vertices.end());
+        Debugger::printWelcome();
+        DEBUG::INFO << std::endl;
 
-        for (unsigned int index : subMesh.indices)
-            indices.push_back(static_cast<unsigned int>(index + offset));
+        if (ac != 3)
+            throw std::invalid_argument("Input must be a valid .obj file and a valid .ppm file.");
+    
+        window = initiate();
+        input = Input(window);
+
+        DEBUG::INFO << "Loading texture: " << av[2] << std::endl;
+        PPM image;
+        image.load(av[2]);
+        DEBUG::SUCCESS << "Texture loaded (" << image.getWidth() << "x"
+                       << image.getHeight() << ")" << std::endl;
+
+        DEBUG::INFO << "Loading model: " << av[1] << std::endl;
+        OBJParser parser;
+        OBJData data = parser.parse(av[1]);
+        DEBUG::SUCCESS << "Model loaded (" << data.positions.size() << " vertices, "
+                       << data.faces.size() << " faces)" << std::endl;
+
+        UVMapper uvMapper;
+        uvMapper.generate(data);
+        DEBUG::SUCCESS << "UV charts generated" << std::endl;
+
+        MeshBuilder builder;
+        const Mesh mesh = builder.build(data);
+        DEBUG::SUCCESS << "Mesh built (" << mesh.subMeshes.size() << " submeshes)"
+                       << std::endl;
+
+        std::vector<Vertex> vertices;
+        std::vector<unsigned int> indices;
+
+        for (const SubMesh& subMesh : mesh.subMeshes)
+        {
+            const std::size_t offset = vertices.size();
+            vertices.insert(vertices.end(), subMesh.vertices.begin(), subMesh.vertices.end());
+
+            for (unsigned int index : subMesh.indices)
+                indices.push_back(static_cast<unsigned int>(index + offset));
+        }
+
+            DEBUG::INFO << "Uploading " << vertices.size() << " vertices and "
+                    << indices.size() << " indices" << std::endl;
+
+        Scop scop(vertices, indices, image);
+
+        
+        Debugger::printControls();
+        DEBUG::INFO << std::endl;
+        Debugger::printAvailableModes();
+        DEBUG::INFO << std::endl;
+
+        scop.loop();
+        DEBUG::SUCCESS << "Application closed normally" << std::endl;
     }
-
-    Scop scop(vertices, indices, image);
-    scop.loop();
+    catch (const std::exception& error)
+    {
+        DEBUG::ERROR << error.what() << std::endl;
+        return 1;
+    }
+    catch (...)
+    {
+        DEBUG::ERROR << "Unknown error" << std::endl;
+        return 1;
+    }
 
     return 0;
 }

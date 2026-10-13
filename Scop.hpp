@@ -9,6 +9,7 @@
 #include <array>
 #include <cstddef>
 #include <vector>
+#include <exception>
 
 // #include "ObjParser.hpp"
 #include "Debugger.hpp"

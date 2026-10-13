@@ -48,7 +48,6 @@ public:
 
     static void printWelcome();
     static void printControls();
-    static void printControls(std::initializer_list<ControlInfo> controls);
     static void printAvailableModes();
     static void cameraModeChanged(std::string_view modeName);
     static void renderModeChanged(std::string_view modeName);

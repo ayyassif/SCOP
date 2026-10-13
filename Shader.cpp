@@ -1,4 +1,5 @@
 #include "Shader.hpp"
+#include "Debugger.hpp"
 
 static bool compileShader(const unsigned int &shader, const char *shaderStr, const char *&shaderCode)
 {
@@ -12,7 +13,8 @@ static bool compileShader(const unsigned int &shader, const char *shaderStr, con
     if(!success)
     {
         glGetShaderInfoLog(shader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::" << shaderStr << "::COMPILATION_FAILED\n" << infoLog << std::endl;
+        DEBUG::ERROR << "Shader " << shaderStr << " compilation failed: "
+                     << infoLog << std::endl;
         return false;
     }
     // end: error check
@@ -47,7 +49,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
     }
     catch(std::ifstream::failure e)
     {
-        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
+        DEBUG::ERROR << "Shader files could not be read" << std::endl;
         return ;
     }
     const char* vShaderCode = vertexCode.c_str();
@@ -75,8 +77,10 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
     if(!success)
     {
         glGetProgramInfoLog(ID, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+        DEBUG::ERROR << "Shader program linking failed: " << infoLog << std::endl;
     }
+    else
+        DEBUG::SUCCESS << "Shader program linked" << std::endl;
     // delete the shaders as they're linked into our program now and no longer necessary
     glDeleteShader(vertex);
     glDeleteShader(fragment);

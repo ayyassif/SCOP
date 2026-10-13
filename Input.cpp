@@ -1,5 +1,7 @@
 #include "Input.hpp"
 
+Input::Input() {}
+
 Input::Input(GLFWwindow *window)
     : firstMouse(true), lastMouse(), window(window)
 {

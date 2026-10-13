@@ -34,7 +34,7 @@ $(BUILD_DIR)/%.o: %.c
 -include $(DEPS)
 
 run: all
-	./$(NAME)
+	./$(NAME) $(ARGS)
 
 debug: CXXFLAGS += -g3 -O0
 debug: re

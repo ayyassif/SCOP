@@ -4,8 +4,9 @@
 #include <limits>
 
 Camera cam(Vec3(0.0f, 0.0f,  3.0f), Vec3(0.0f, 1.0f,  0.0f));
-GLFWwindow *window = initiate();
-Input input(window);
+GLFWwindow *window;
+Input input;
+
 namespace
 {
     bool gMouseCaptured = true;
@@ -69,9 +70,11 @@ Scop::Scop(
 )
 {
     indexCount = indices.size();
+    DEBUG::INFO << "Creating render resources" << std::endl;
     frameCameraOnVertices(vertices);
     setupVertexBuffers(vertices, indices);
     setupTexture(image);
+    DEBUG::SUCCESS << "Render resources ready" << std::endl;
 }
 
 void Scop::setupTexture(const PPM &image)
@@ -103,7 +106,7 @@ void Scop::setupTexture(const PPM &image)
     );
 
     glGenerateMipmap(GL_TEXTURE_2D);
-
+    DEBUG::SUCCESS << "Texture uploaded to GPU" << std::endl;
 }
 
 void Scop::setupVertexBuffers(
@@ -140,28 +143,45 @@ void Scop::setupVertexBuffers(
     glVertexAttribIPointer(2, 1, GL_INT, sizeof(Vertex),
                            reinterpret_cast<void*>(offsetof(Vertex, chartIndex)));
     glEnableVertexAttribArray(2);
+    DEBUG::SUCCESS << "Vertex buffers configured" << std::endl;
 }
 
 void Scop::loop()
 {
+    DEBUG::INFO << "Starting render loop" << std::endl;
     Shader shader("shaders/vertex.glsl", "shaders/fragment.glsl");
 
     shader.use();
     shader.setInt("Texture", 0);
     RenderMode renderMode = RenderMode::Color;
     bool mKeyPressedLastFrame = false;
+    bool nKeyPressedLastFrame = false;
     while(!glfwWindowShouldClose(window))
     {
         // input
         processInput(window, input, cam);
 
         const bool mKeyPressed = input.getKeyPressed(GLFW_KEY_M);
+        const bool nKeyPressed = input.getKeyPressed(GLFW_KEY_N);
         if (mKeyPressed && !mKeyPressedLastFrame)
         {
-            renderMode = static_cast<RenderMode>((static_cast<int>(renderMode) + 1) % sizeof(RenderMode));
+            if (renderMode == RenderMode::Color)
+                renderMode = RenderMode::Texture;
+            else
+                renderMode = RenderMode::Color;
             Debugger::renderModeChanged(renderNames[static_cast<int>(renderMode)]);
         }
+        else if (nKeyPressed && !nKeyPressedLastFrame)
+        {
+            if (renderMode == RenderMode::Grey)
+                renderMode = RenderMode::ChartColors;
+            else
+                renderMode = RenderMode::Grey;
+            Debugger::renderModeChanged(renderNames[static_cast<int>(renderMode)]);
+        }
+
         mKeyPressedLastFrame = mKeyPressed;
+        nKeyPressedLastFrame = nKeyPressed;
 
         // rendering commands
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
@@ -195,6 +215,7 @@ void Scop::loop()
         glfwPollEvents();
         glfwSwapBuffers(window);
     }
+    DEBUG::INFO << "Render loop stopped" << std::endl;
     glfwTerminate();
 }
 
@@ -212,7 +233,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 GLFWwindow *initiate()
 {
-    glfwInit();
+    DEBUG::INFO << "Initializing GLFW" << std::endl;
+    if (!glfwInit())
+    {
+        DEBUG::ERROR << "Failed to initialize GLFW" << std::endl;
+        return nullptr;
+    }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -221,7 +247,7 @@ GLFWwindow *initiate()
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "I LOVE WISH", NULL, NULL);
     if (window == NULL)
     {
-        std::cout << "Failed to create GLFW window" << std::endl;
+        DEBUG::ERROR << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return nullptr;
     }
@@ -230,7 +256,9 @@ GLFWwindow *initiate()
     // load opengl functions with glad
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        std::cout << "Failed to initialize GLAD" << std::endl;
+        DEBUG::ERROR << "Failed to initialize GLAD" << std::endl;
+        glfwDestroyWindow(window);
+        glfwTerminate();
         return nullptr;
     }
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
@@ -241,7 +269,7 @@ GLFWwindow *initiate()
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback); 
     glEnable(GL_DEPTH_TEST);
-    
+    DEBUG::SUCCESS << "OpenGL context ready" << std::endl;
     return (window);
 }
 
@@ -260,7 +288,10 @@ void processInput(GLFWwindow *window, Input &input, Camera &cam)
     const float deltaTime = Math::getDeltaTime();
 
     if (input.getKeyPressed(GLFW_KEY_ESCAPE))
+    {
         glfwSetWindowShouldClose(window, true);
+        DEBUG::INPUT << "Exit requested" << std::endl;
+    }
 
     const bool tabHeld = input.getKeyPressed(GLFW_KEY_TAB);
     if (tabHeld && !gTabPressedLastFrame)
@@ -274,6 +305,9 @@ void processInput(GLFWwindow *window, Input &input, Camera &cam)
         }
         else
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+        DEBUG::INPUT << "Mouse capture " << (gMouseCaptured ? "enabled" : "disabled")
+                 << std::endl;
     }
     gTabPressedLastFrame = tabHeld;
 

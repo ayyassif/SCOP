@@ -13,6 +13,7 @@ private:
 public:
     GLFWwindow *window;
 
+    Input();
     Input(GLFWwindow *window);
 
     bool getKeyPressed(int key) const;
