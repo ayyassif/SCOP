@@ -256,7 +256,7 @@ GLFWwindow *initiate()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // create a window with glfw
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "I LOVE WISH", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SCOP", NULL, NULL);
     if (window == NULL)
     {
         DEBUG::ERROR << "Failed to create GLFW window" << std::endl;

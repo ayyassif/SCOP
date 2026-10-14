@@ -44,6 +44,7 @@ int main(int ac, char *av[])
 
         for (const SubMesh& subMesh : mesh.subMeshes)
         {
+            DEBUG::TRACE << "bruh" << std::endl;
             const std::size_t offset = vertices.size();
             vertices.insert(vertices.end(), subMesh.vertices.begin(), subMesh.vertices.end());
 
