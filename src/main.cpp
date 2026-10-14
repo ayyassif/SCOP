@@ -27,8 +27,7 @@ int main(int ac, char *av[])
         DEBUG::INFO << "Loading model: " << av[1] << std::endl;
         OBJParser parser;
         OBJData data = parser.parse(av[1]);
-        DEBUG::SUCCESS << "Model loaded (" << data.positions.size() << " vertices, "
-                       << data.faces.size() << " faces)" << std::endl;
+        DEBUG::SUCCESS << "Model loaded" << std::endl;
 
         UVMapper uvMapper;
         uvMapper.generate(data);
@@ -38,18 +37,6 @@ int main(int ac, char *av[])
         const Mesh mesh = builder.build(data);
         DEBUG::SUCCESS << "Mesh built"
                        << std::endl;
-
-        std::vector<Vertex> vertices;
-        std::vector<unsigned int> indices;
-
-        const std::size_t offset = vertices.size();
-        vertices.insert(vertices.end(), mesh.vertices.begin(), mesh.vertices.end());
-
-        for (unsigned int index : mesh.indices)
-            indices.push_back(static_cast<unsigned int>(index + offset));
-
-        DEBUG::INFO << "Uploading " << vertices.size() << " vertices and "
-                << indices.size() << " indices" << std::endl;
 
         {
             Scop scop(mesh, image);
