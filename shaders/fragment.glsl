@@ -13,20 +13,38 @@ const int MODE_TEXTURE = 1;
 const int MODE_GREY = 2;
 const int MODE_CHART = 3;
 
-vec3 colorPicker(int index)
+vec3 colorPicker(int index, int size)
 {
-    const vec3 colors[8] = vec3[](
-        vec3(0.95, 0.25, 0.25),
-        vec3(0.25, 0.65, 0.95),
-        vec3(0.35, 0.85, 0.45),
-        vec3(0.95, 0.75, 0.20),
-        vec3(0.75, 0.35, 0.90),
-        vec3(0.20, 0.85, 0.80),
-        vec3(0.95, 0.45, 0.20),
-        vec3(0.70, 0.85, 0.30)
+    const vec3 colors[24] = vec3[](
+        vec3(0.95, 0.25, 0.25), // Red
+        vec3(0.25, 0.65, 0.95), // Blue
+        vec3(0.35, 0.85, 0.45), // Green
+        vec3(0.95, 0.75, 0.20), // Yellow
+        vec3(0.75, 0.35, 0.90), // Purple
+        vec3(0.20, 0.85, 0.80), // Cyan
+        vec3(0.95, 0.45, 0.20), // Orange
+        vec3(0.70, 0.85, 0.30), // Lime
+
+        vec3(0.95, 0.40, 0.65), // Pink
+        vec3(0.40, 0.30, 0.85), // Indigo
+        vec3(0.20, 0.75, 0.55), // Mint
+        vec3(0.85, 0.60, 0.40), // Peach
+        vec3(0.55, 0.75, 0.95), // Light blue
+        vec3(0.80, 0.25, 0.35), // Crimson
+        vec3(0.60, 0.85, 0.65), // Light green
+        vec3(0.95, 0.60, 0.10), // Amber
+
+        vec3(0.65, 0.45, 0.75), // Lavender
+        vec3(0.30, 0.80, 0.90), // Sky blue
+        vec3(0.90, 0.80, 0.55), // Sand
+        vec3(0.45, 0.65, 0.25), // Olive
+        vec3(0.90, 0.35, 0.45), // Coral
+        vec3(0.35, 0.50, 0.70), // Steel blue
+        vec3(0.75, 0.65, 0.90), // Light purple
+        vec3(0.50, 0.80, 0.75)  // Seafoam
     );
 
-    return colors[index % 8];
+    return colors[index % size];
 }
 
 vec3 grayPicker()
@@ -54,10 +72,10 @@ void main()
             FragColor = vec4(grayPicker(), 1.0);
             break;
         case MODE_CHART:
-            FragColor = vec4(colorPicker(max(chartIndex, 0)), 1.0);
+            FragColor = vec4(colorPicker(max(chartIndex, 0), 24), 1.0);
             break;
         default: //MODE_COLOR
-            FragColor = vec4(colorPicker(gl_PrimitiveID), 1.0);
+            FragColor = vec4(colorPicker(gl_PrimitiveID, 8), 1.0);
             break;
     }
 } 

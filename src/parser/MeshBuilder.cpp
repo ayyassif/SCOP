@@ -20,15 +20,6 @@ namespace
         }
     };
 
-    std::size_t findSubMesh(const Mesh& mesh, const std::string& materialName)
-    {
-        for (std::size_t i = 0; i < mesh.subMeshes.size(); ++i)
-            if (mesh.subMeshes[i].materialName == materialName)
-                return i;
-
-        return mesh.subMeshes.size();
-    }
-
     void validatePosition(const OBJData& data, int index, std::size_t faceIndex,
                           std::size_t cornerIndex)
     {
@@ -50,7 +41,7 @@ namespace
         return index;
     }
 
-    unsigned int vertexIndex(SubMesh& subMesh, std::map<VertexKey, unsigned int>& vertices,
+    unsigned int vertexIndex(Mesh& mesh, std::map<VertexKey, unsigned int>& vertices,
                              const OBJData& data, const OBJIndex& corner,
                              std::size_t faceIndex, std::size_t cornerIndex)
     {
@@ -64,8 +55,8 @@ namespace
 
         const Vec3& position = data.positions[corner.position];
         const Vec2 uv = texcoord >= 0 ? data.texcoords[texcoord] : Vec2();
-        const unsigned int index = static_cast<unsigned int>(subMesh.vertices.size());
-        subMesh.vertices.push_back(Vertex{position, uv, chartIndex});
+        const unsigned int index = static_cast<unsigned int>(mesh.vertices.size());
+        mesh.vertices.push_back(Vertex{position, uv, chartIndex});
         vertices[key] = index;
         return index;
     }
@@ -74,7 +65,7 @@ namespace
 Mesh MeshBuilder::build(const OBJData& data)
 {
     Mesh mesh;
-    std::vector<std::map<VertexKey, unsigned int>> vertexMaps;
+    std::map<VertexKey, unsigned int> vertexMap;
 
     for (std::size_t faceIndex = 0; faceIndex < data.faces.size(); ++faceIndex)
     {
@@ -83,29 +74,19 @@ Mesh MeshBuilder::build(const OBJData& data)
             throw std::runtime_error("MeshBuilder: face " + std::to_string(faceIndex) +
                 " has fewer than three vertices");
 
-        std::size_t subMeshIndex = findSubMesh(mesh, face.materialName);
-        if (subMeshIndex == mesh.subMeshes.size())
-        {
-            mesh.subMeshes.push_back(SubMesh());
-            mesh.subMeshes.back().materialName = face.materialName;
-            vertexMaps.push_back(std::map<VertexKey, unsigned int>());
-        }
-
-        SubMesh& subMesh = mesh.subMeshes[subMeshIndex];
-        std::map<VertexKey, unsigned int>& vertices = vertexMaps[subMeshIndex];
-        const unsigned int first = vertexIndex(subMesh, vertices, data, face.vertices[0],
+        const unsigned int first = vertexIndex(mesh, vertexMap, data, face.vertices[0],
                                                faceIndex, 0);
 
         for (std::size_t corner = 1; corner + 1 < face.vertices.size(); ++corner)
         {
-            const unsigned int second = vertexIndex(subMesh, vertices, data,
+            const unsigned int second = vertexIndex(mesh, vertexMap, data,
                                                     face.vertices[corner], faceIndex, corner);
-            const unsigned int third = vertexIndex(subMesh, vertices, data,
+            const unsigned int third = vertexIndex(mesh, vertexMap, data,
                                                    face.vertices[corner + 1], faceIndex,
                                                    corner + 1);
-            subMesh.indices.push_back(first);
-            subMesh.indices.push_back(second);
-            subMesh.indices.push_back(third);
+            mesh.indices.push_back(first);
+            mesh.indices.push_back(second);
+            mesh.indices.push_back(third);
         }
     }
 

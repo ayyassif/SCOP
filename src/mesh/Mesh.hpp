@@ -1,13 +1,13 @@
 #ifndef MESH_HPP
 #define MESH_HPP
 
-#include "SubMesh.hpp"
-
 #include <vector>
+#include "Vertex.hpp"
 
 struct Mesh
 {
-	std::vector<SubMesh> subMeshes;
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
 };
 
 #endif

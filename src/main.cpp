@@ -36,27 +36,23 @@ int main(int ac, char *av[])
 
         MeshBuilder builder;
         const Mesh mesh = builder.build(data);
-        DEBUG::SUCCESS << "Mesh built (" << mesh.subMeshes.size() << " submeshes)"
+        DEBUG::SUCCESS << "Mesh built"
                        << std::endl;
 
         std::vector<Vertex> vertices;
         std::vector<unsigned int> indices;
 
-        for (const SubMesh& subMesh : mesh.subMeshes)
-        {
-            DEBUG::TRACE << "bruh" << std::endl;
-            const std::size_t offset = vertices.size();
-            vertices.insert(vertices.end(), subMesh.vertices.begin(), subMesh.vertices.end());
+        const std::size_t offset = vertices.size();
+        vertices.insert(vertices.end(), mesh.vertices.begin(), mesh.vertices.end());
 
-            for (unsigned int index : subMesh.indices)
-                indices.push_back(static_cast<unsigned int>(index + offset));
-        }
+        for (unsigned int index : mesh.indices)
+            indices.push_back(static_cast<unsigned int>(index + offset));
 
-            DEBUG::INFO << "Uploading " << vertices.size() << " vertices and "
-                    << indices.size() << " indices" << std::endl;
+        DEBUG::INFO << "Uploading " << vertices.size() << " vertices and "
+                << indices.size() << " indices" << std::endl;
 
         {
-            Scop scop(vertices, indices, image);
+            Scop scop(mesh, image);
 
             Debugger::printControls();
             DEBUG::INFO << std::endl;

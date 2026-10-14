@@ -14,6 +14,7 @@
 #include "mesh/Vertex.hpp"
 #include "Camera.hpp"
 #include "Input.hpp"
+#include "mesh/Mesh.hpp"
 
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
@@ -39,16 +40,12 @@ private:
     std::size_t indexCount;
     
     void setupTexture(const PPM &image);
-    void setupVertexBuffers(
-        const std::vector<Vertex>& vertices,
-        const std::vector<unsigned int>& indices
-    );
+    void setupVertexBuffers(const Mesh& mesh);
 
 public:
     Scop(
-        const std::vector<Vertex>& vertices,
-        const std::vector<unsigned int>& indices,
-        const PPM &image
+        const Mesh& mesh,
+        const PPM&  image
     );
 
     ~Scop();

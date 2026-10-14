@@ -66,15 +66,14 @@ namespace
  // <------------------------------------------------------------------------------------->
 
 Scop::Scop(
-    const std::vector<Vertex>& vertices,
-    const std::vector<unsigned int>& indices,
-    const PPM &image
+    const Mesh& mesh,
+    const PPM& image
 )
 {
-    indexCount = indices.size();
+    indexCount = mesh.indices.size();
     DEBUG::INFO << "Creating render resources" << std::endl;
-    frameCameraOnVertices(vertices);
-    setupVertexBuffers(vertices, indices);
+    frameCameraOnVertices(mesh.vertices);
+    setupVertexBuffers(mesh);
     setupTexture(image);
     DEBUG::SUCCESS << "Render resources ready" << std::endl;
 }
@@ -119,10 +118,7 @@ void Scop::setupTexture(const PPM &image)
     DEBUG::SUCCESS << "Texture uploaded to GPU" << std::endl;
 }
 
-void Scop::setupVertexBuffers(
-    const std::vector<Vertex>& vertices,
-    const std::vector<unsigned int>& indices
-)
+void Scop::setupVertexBuffers(const Mesh& mesh)
 {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &EBO);
@@ -133,15 +129,15 @@ void Scop::setupVertexBuffers(
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(
         GL_ARRAY_BUFFER,
-        vertices.size() * sizeof(Vertex),
-        vertices.data(), GL_STATIC_DRAW
+        mesh.vertices.size() * sizeof(Vertex),
+        mesh.vertices.data(), GL_STATIC_DRAW
     );
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(
         GL_ELEMENT_ARRAY_BUFFER,
-        indices.size() * sizeof(unsigned int),
-        indices.data(), GL_STATIC_DRAW
+        mesh.indices.size() * sizeof(unsigned int),
+        mesh.indices.data(), GL_STATIC_DRAW
     );
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
