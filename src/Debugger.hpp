@@ -2,7 +2,6 @@
 #define SCOP_DEBUGGER_HPP
 
 #include <iostream>
-#include <initializer_list>
 #include <string_view>
 #include <type_traits>
 
@@ -10,12 +9,6 @@
 class Debugger
 {
 public:
-    struct ControlInfo
-    {
-        std::string_view keys;
-        std::string_view description;
-    };
-
     explicit Debugger(std::string_view label,
                       std::string_view color,
                       std::ostream& output = std::cout);

@@ -12,23 +12,10 @@ Camera::Camera()
 {}
 
 Camera::Camera(
-    float posX, float posY, float posZ,
-    float upX, float upY, float upZ,
-    float yaw, float pitch
-)
-    : Camera(
-        Vec3(posX, posY, posZ),
-        Vec3(upX, upY, upZ),
-        yaw, pitch
-    )
-{}
-
-Camera::Camera(
     Vec3 position, Vec3 up,
     float yaw, float pitch
 )
-    : Front(Vec3(0.0f, 0.0f, -1.0f)),
-    MovementSpeed(SPEED),
+    : MovementSpeed(SPEED),
     MouseSensitivity(SENSITIVITY),
     Zoom(ZOOM),
     Position(position),
@@ -42,7 +29,8 @@ Camera::Camera(
     initialPosition(position),
     initialYaw(yaw),
     initialPitch(pitch),
-    initialZoom(ZOOM)
+    initialZoom(ZOOM),
+    cameraModePressedLastFrame(false)
 {
     updateCameraVectors();
 }
@@ -135,12 +123,9 @@ void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
                 return;
         }
 
-        if (Pitch > 89.0f)
-            Pitch = 89.0f;
-        if (Pitch < -89.0f)
-            Pitch = -89.0f;
+        Pitch = std::clamp(Pitch, -89.0f, 89.0f);
         updateCameraVectors();
-        Position = orbitTarget - Front * orbitDistance;
+        updateOrbitPosition();
         return;
     }
 
@@ -195,15 +180,12 @@ void Camera::ProcessMouseScroll(float yoffset)
     {
         orbitDistance = std::clamp(orbitDistance - yoffset * MovementSpeed,
                                    0.1f, maxOrbitDistance);
-        Position = orbitTarget - Front * orbitDistance;
+        updateOrbitPosition();
         return;
     }
 
     Zoom -= yoffset;
-    if (Zoom < 1.0f)
-        Zoom = 1.0f;
-    if (Zoom > 45.0f)
-        Zoom = 45.0f;
+    Zoom = std::clamp(Zoom, 1.0f, 45.0f);
 }
 
 void Camera::updateCameraVectors()
@@ -224,4 +206,48 @@ void Camera::updateCameraVectors()
 void Camera::updateOrbitPosition()
 {
     Position = orbitTarget - Front * orbitDistance;
+}
+
+void Camera::frameCameraOnVertices(const std::vector<Vertex>& vertices)
+{
+    if (vertices.empty())
+        return;
+
+    Vec3 minimum(
+        std::numeric_limits<float>::max(),
+        std::numeric_limits<float>::max(),
+        std::numeric_limits<float>::max());
+    Vec3 maximum(
+        std::numeric_limits<float>::lowest(),
+        std::numeric_limits<float>::lowest(),
+        std::numeric_limits<float>::lowest());
+
+    for (const Vertex& vertex : vertices)
+    {
+        minimum.x = std::min(minimum.x, vertex.position.x);
+        minimum.y = std::min(minimum.y, vertex.position.y);
+        minimum.z = std::min(minimum.z, vertex.position.z);
+        maximum.x = std::max(maximum.x, vertex.position.x);
+        maximum.y = std::max(maximum.y, vertex.position.y);
+        maximum.z = std::max(maximum.z, vertex.position.z);
+    }
+
+    const Vec3 center = (minimum + maximum) * 0.5f;
+    const float radius = (maximum - minimum).length() * 0.5f;
+    FrameOn(center, radius);
+}
+
+bool Camera::cameraSwitch(const bool isSwitchPressed)
+{
+    const bool isSwitchJustPressed = isSwitchPressed && !cameraModePressedLastFrame;
+    if (isSwitchJustPressed)
+    {
+        const CameraMode nextMode = GetMode() == CameraMode::Orbit
+            ? CameraMode::Free
+            : CameraMode::Orbit;
+        SetMode(nextMode);
+        Debugger::cameraModeChanged(nextMode == CameraMode::Free ? "Free" : "Orbit");
+    }
+    cameraModePressedLastFrame = isSwitchPressed;
+    return isSwitchJustPressed;
 }

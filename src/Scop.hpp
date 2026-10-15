@@ -19,34 +19,31 @@
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
 
-extern Camera cam;
-extern GLFWwindow *window;
-extern Input input;
-
 GLFWwindow  *initiate();
 void        framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void        processInput(GLFWwindow *window, Input &input, Camera &cam);
 void        mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void        scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
-
+// (Vec3(0.0f, 0.0f,  3.0f), Vec3(0.0f, 1.0f,  0.0f))
 class Scop
 {
 private:
-    unsigned int VBO;
-    unsigned int VAO;
-    unsigned int EBO;
-    unsigned int texture;
-    std::size_t indexCount;
+    GLFWwindow* window = nullptr;
+    Camera      cam;
+    Input       input;
+
+    unsigned int VBO = 0;
+    unsigned int VAO = 0;
+    unsigned int EBO = 0;
+    unsigned int texture = 0;
+    std::size_t indexCount = 0;
     
     void setupTexture(const PPM &image);
     void setupVertexBuffers(const Mesh& mesh);
+    void processInput();
 
 public:
-    Scop(
-        const Mesh& mesh,
-        const PPM&  image
-    );
+    Scop(const Mesh& mesh, const PPM& image);
 
     ~Scop();
 

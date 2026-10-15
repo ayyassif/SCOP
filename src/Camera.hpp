@@ -1,7 +1,10 @@
 #ifndef CAMERA_HPP
 #define CAMERA_HPP
 
+#include <vector>
 #include "math/Math.hpp"
+#include "mesh/Vertex.hpp"
+#include "Debugger.hpp"
 
 enum Camera_Movement {
     FORWARD,
@@ -20,12 +23,12 @@ enum class CameraMode
     Free
 };
 
-#define YAW         -90.0f
-#define PITCH        0.0f
-#define SPEED        2.5f
-#define SENSITIVITY  0.1f
-#define ZOOM         45.0f
-#define SPRINT       5.0f
+constexpr float YAW         = -90.0f;
+constexpr float PITCH       = 0.0f;
+constexpr float SPEED       = 2.5f;
+constexpr float SENSITIVITY = 0.1f;
+constexpr float ZOOM        = 45.0f;
+constexpr float SPRINT      = 5.0f;
 
 class Camera
 {
@@ -44,12 +47,6 @@ public:
     float Zoom;
     
     Camera();
-    
-    Camera(
-        float posX, float posY, float posZ,
-        float upX, float upY, float upZ,
-        float yaw = YAW, float pitch = PITCH
-    );
 
     Camera(
         Vec3 position, Vec3 up,
@@ -63,6 +60,8 @@ public:
     void ProcessKeyboard(Camera_Movement direction, float deltaTime);
     void ProcessMouseMovement(Vec2 offset, bool constrainPitch = true);
     void ProcessMouseScroll(float yoffset);
+    void frameCameraOnVertices(const std::vector<Vertex>& vertices);
+    bool cameraSwitch(const bool isSwitchPressed);
 
 private:
     bool isSprinting;
@@ -74,10 +73,12 @@ private:
     float initialYaw;
     float initialPitch;
     float initialZoom;
+    bool  cameraModePressedLastFrame;
 
     void updateCameraVectors();
     void updateOrbitPosition();
     void resetToInitialView();
+
 };
 
 #endif

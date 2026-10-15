@@ -2,16 +2,13 @@
 
 #include <algorithm>
 #include <limits>
+#include <stdexcept>
 
-Camera cam(Vec3(0.0f, 0.0f,  3.0f), Vec3(0.0f, 1.0f,  0.0f));
-GLFWwindow *window;
-Input input;
+Camera *camPtr = nullptr;
+Input *inputPtr = nullptr;
 
 namespace
 {
-    bool gMouseCaptured = true;
-    bool gTabPressedLastFrame = false;
-    bool gCameraModePressedLastFrame = false;
     int gFramebufferWidth = static_cast<int>(SCR_WIDTH);
     int gFramebufferHeight = static_cast<int>(SCR_HEIGHT);
 
@@ -23,7 +20,7 @@ namespace
         ChartColors = 3
     };
 
-    const std::string renderNames[] =
+    constexpr const char* renderNames[] =
     {
         "Color",
         "Texture",
@@ -31,33 +28,16 @@ namespace
         "Chart Colors"
     };
 
-    void frameCameraOnVertices(const std::vector<Vertex>& vertices)
+    RenderMode toggleRenderMode(RenderMode mode, bool textureModes)
     {
-        if (vertices.empty())
-            return;
+        if (textureModes)
+            return mode == RenderMode::Color
+                ? RenderMode::Texture
+                : RenderMode::Color;
 
-        Vec3 minimum(
-            std::numeric_limits<float>::max(),
-            std::numeric_limits<float>::max(),
-            std::numeric_limits<float>::max());
-        Vec3 maximum(
-            std::numeric_limits<float>::lowest(),
-            std::numeric_limits<float>::lowest(),
-            std::numeric_limits<float>::lowest());
-
-        for (const Vertex& vertex : vertices)
-        {
-            minimum.x = std::min(minimum.x, vertex.position.x);
-            minimum.y = std::min(minimum.y, vertex.position.y);
-            minimum.z = std::min(minimum.z, vertex.position.z);
-            maximum.x = std::max(maximum.x, vertex.position.x);
-            maximum.y = std::max(maximum.y, vertex.position.y);
-            maximum.z = std::max(maximum.z, vertex.position.z);
-        }
-
-        const Vec3 center = (minimum + maximum) * 0.5f;
-        const float radius = (maximum - minimum).length() * 0.5f;
-        cam.FrameOn(center, radius);
+        return mode == RenderMode::Grey
+            ? RenderMode::ChartColors
+            : RenderMode::Grey;
     }
 }
 
@@ -65,14 +45,29 @@ namespace
  // <-----------------------------------class functions----------------------------------->
  // <------------------------------------------------------------------------------------->
 
-Scop::Scop(
-    const Mesh& mesh,
-    const PPM& image
-)
+Scop::Scop(const Mesh& mesh, const PPM& image)
 {
+    if (mesh.vertices.empty() || mesh.indices.empty())
+        throw std::invalid_argument("Mesh must contain vertices and indices");
+
+    for (unsigned int index : mesh.indices)
+    {
+        if (index >= mesh.vertices.size())
+            throw std::invalid_argument("Mesh contains an out-of-range index");
+    }
+
+    if (mesh.indices.size() > static_cast<std::size_t>(std::numeric_limits<GLsizei>::max()))
+        throw std::length_error("Mesh contains too many indices to render");
+
+    window = initiate();
+    if (window == nullptr)
+        throw std::runtime_error("Window initialization failed");
+    input = Input(window);
+    camPtr = &cam;
+    inputPtr = &input;
     indexCount = mesh.indices.size();
     DEBUG::INFO << "Creating render resources" << std::endl;
-    frameCameraOnVertices(mesh.vertices);
+    cam.frameCameraOnVertices(mesh.vertices);
     setupVertexBuffers(mesh);
     setupTexture(image);
     DEBUG::SUCCESS << "Render resources ready" << std::endl;
@@ -80,28 +75,39 @@ Scop::Scop(
 
 Scop::~Scop()
 {
-    glDeleteTextures(1, &texture);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
-    glDeleteVertexArrays(1, &VAO);
+    if (window != nullptr)
+    {
+        if (texture != 0)
+            glDeleteTextures(1, &texture);
+        if (VBO != 0)
+            glDeleteBuffers(1, &VBO);
+        if (EBO != 0)
+            glDeleteBuffers(1, &EBO);
+        if (VAO != 0)
+            glDeleteVertexArrays(1, &VAO);
+
+        glfwDestroyWindow(window);
+        window = nullptr;
+        glfwTerminate();
+    }
+
+    if (camPtr == &cam)
+        camPtr = nullptr;
+    if (inputPtr == &input)
+        inputPtr = nullptr;
+    DEBUG::SUCCESS << "Application closed normally" << std::endl;
 }
 
 void Scop::setupTexture(const PPM &image)
 {
-    int width;
-    int height;
-    int nrChannels;
-
     glGenTextures(1, &texture); 
     glBindTexture(GL_TEXTURE_2D, texture);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    // will change this later for changing textures when needed
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    //  <---->
     glTexImage2D(
         GL_TEXTURE_2D,
         0,
@@ -165,31 +171,24 @@ void Scop::loop()
     while(!glfwWindowShouldClose(window))
     {
         // input
-        processInput(window, input, cam);
+        processInput();
 
         const bool mKeyPressed = input.getKeyPressed(GLFW_KEY_M);
         const bool nKeyPressed = input.getKeyPressed(GLFW_KEY_N);
         if (mKeyPressed && !mKeyPressedLastFrame)
         {
-            if (renderMode == RenderMode::Color)
-                renderMode = RenderMode::Texture;
-            else
-                renderMode = RenderMode::Color;
+            renderMode = toggleRenderMode(renderMode, true);
             Debugger::renderModeChanged(renderNames[static_cast<int>(renderMode)]);
         }
         else if (nKeyPressed && !nKeyPressedLastFrame)
         {
-            if (renderMode == RenderMode::Grey)
-                renderMode = RenderMode::ChartColors;
-            else
-                renderMode = RenderMode::Grey;
+            renderMode = toggleRenderMode(renderMode, false);
             Debugger::renderModeChanged(renderNames[static_cast<int>(renderMode)]);
         }
 
         mKeyPressedLastFrame = mKeyPressed;
         nKeyPressedLastFrame = nKeyPressed;
 
-        // rendering commands
         glClearColor(0.12f, 0.15f, 0.19f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -200,7 +199,7 @@ void Scop::loop()
         constexpr float farPlane = 1000.0f;
         Mat4 projection = Mat4::perspective(
             Math::radians(cam.Zoom),
-            static_cast<float>(gFramebufferWidth) /
+            static_cast<float>(std::max(1, gFramebufferWidth)) /
                 static_cast<float>(std::max(1, gFramebufferHeight)),
             nearPlane,
             farPlane);
@@ -209,16 +208,13 @@ void Scop::loop()
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
 
-        Mat4 model = Mat4::model(Vec3(0.0f), Math::radians(0), Vec3(1.0f), Vec3(1.0f));
+        const Mat4 model = Mat4::model(Vec3(0.0f), 0.0f, Vec3(1.0f), Vec3(1.0f));
 
         shader.setMat4("mvp", projection
                                 * cam.GetViewMatrix()
                                 * model);
 
-        // glDrawArrays(GL_TRIANGLES, 0, 36);
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indexCount), GL_UNSIGNED_INT, 0);
-        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        // check events and swap buffers
         glfwPollEvents();
         glfwSwapBuffers(window);
     }
@@ -251,21 +247,20 @@ GLFWwindow *initiate()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    // create a window with glfw
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SCOP", NULL, NULL);
-    if (window == NULL)
+    GLFWwindow* createdWindow = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SCOP", nullptr, nullptr);
+    if (createdWindow == nullptr)
     {
         DEBUG::ERROR << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return nullptr;
     }
-    glfwMakeContextCurrent(window);
+    glfwMakeContextCurrent(createdWindow);
     
     // load opengl functions with glad
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         DEBUG::ERROR << "Failed to initialize GLAD" << std::endl;
-        glfwDestroyWindow(window);
+        glfwDestroyWindow(createdWindow);
         glfwTerminate();
         return nullptr;
     }
@@ -273,57 +268,29 @@ GLFWwindow *initiate()
     gFramebufferHeight = SCR_HEIGHT;
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetFramebufferSizeCallback(createdWindow, framebuffer_size_callback);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback); 
+    glfwSetInputMode(createdWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(createdWindow, mouse_callback);
+    glfwSetScrollCallback(createdWindow, scroll_callback);
     glEnable(GL_DEPTH_TEST);
     DEBUG::SUCCESS << "OpenGL context ready" << std::endl;
-    return (window);
+    return createdWindow;
 }
 
-void processInput(GLFWwindow *window, Input &input, Camera &cam)
+void Scop::processInput()
 {
     const float deltaTime = Math::getDeltaTime();
 
-    if (input.getKeyPressed(GLFW_KEY_ESCAPE))
-    {
-        glfwSetWindowShouldClose(window, true);
-        DEBUG::INPUT << "Exit requested" << std::endl;
-    }
+    input.processTabExit(
+        gFramebufferWidth,
+        gFramebufferHeight
+    );
 
-    const bool tabHeld = input.getKeyPressed(GLFW_KEY_TAB);
-    if (tabHeld && !gTabPressedLastFrame)
-    {
-        gMouseCaptured = !gMouseCaptured;
-        if (gMouseCaptured)
-        {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            glfwSetCursorPos(window, SCR_WIDTH / 2.0, SCR_HEIGHT / 2.0);
-            input.resetMouseState();
-        }
-        else
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
-        DEBUG::INPUT << "Mouse capture " << (gMouseCaptured ? "enabled" : "disabled")
-                 << std::endl;
-    }
-    gTabPressedLastFrame = tabHeld;
-
-    const bool cameraModePressed = input.getKeyPressed(GLFW_KEY_C);
-    if (cameraModePressed && !gCameraModePressedLastFrame)
-    {
-        const CameraMode nextMode = cam.GetMode() == CameraMode::Orbit
-            ? CameraMode::Free
-            : CameraMode::Orbit;
-        cam.SetMode(nextMode);
+    if (cam.cameraSwitch(input.getKeyPressed(GLFW_KEY_C)))
         input.resetMouseState();
-        Debugger::cameraModeChanged(nextMode == CameraMode::Free ? "Free" : "Orbit");
-    }
-    gCameraModePressedLastFrame = cameraModePressed;
 
-    if (!gMouseCaptured)
+    if (!input.isMouseCaptured())
         return;
 
     if (input.getKeyPressed(GLFW_KEY_LEFT_CONTROL))
@@ -347,20 +314,23 @@ void processInput(GLFWwindow *window, Input &input, Camera &cam)
     }
 }
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+void mouse_callback(GLFWwindow*, double xpos, double ypos)
 {
-    if (!gMouseCaptured)
+    if (camPtr == nullptr || inputPtr == nullptr || !inputPtr->isMouseCaptured())
         return;
 
-    cam.ProcessMouseMovement(
-        input.calculateMouseDelta(
+    camPtr->ProcessMouseMovement(
+        inputPtr->calculateMouseDelta(
             (float)xpos,
             (float)ypos
         )
     );
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void scroll_callback(GLFWwindow*, double, double yoffset)
 {
-    cam.ProcessMouseScroll((float)yoffset);
+    if (camPtr == nullptr)
+        return;
+
+    camPtr->ProcessMouseScroll((float)yoffset);
 }

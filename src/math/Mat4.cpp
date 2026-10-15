@@ -159,28 +159,6 @@ Mat4 Mat4::perspective(float fov, float aspect, float nearPlane, float farPlane)
 	return result;
 }
 
-// Mat4 Mat4::orthographic(
-// 	float left,
-// 	float right,
-// 	float bottom,
-// 	float top,
-// 	float nearPlane,
-// 	float farPlane
-// )
-// {
-// 	Mat4 result = Mat4::identity();
-
-// 	result[0][0] = 2.0f / (right - left);
-// 	result[1][1] = 2.0f / (top - bottom);
-// 	result[2][2] = -2.0f / (farPlane - nearPlane);
-
-// 	result[0][3] = -(right + left) / (right - left);
-// 	result[1][3] = -(top + bottom) / (top - bottom);
-// 	result[2][3] = -(farPlane + nearPlane) / (farPlane - nearPlane);
-
-// 	return result;
-// }
-
 Mat4 Mat4::lookAt(const Vec3& position, const Vec3& target, const Vec3& worldUp)
 {
     const Vec3 cameraDirection = (position - target).normalize();
@@ -206,74 +184,6 @@ Mat4 Mat4::lookAt(const Vec3& position, const Vec3& target, const Vec3& worldUp)
 
     return result;
 }
-
-// Mat4 Mat4::transpose() const
-// {
-// 	Mat4 result;
-// 	for (int row = 0; row < 4; ++row) {
-// 		for (int col = 0; col < 4; ++col) {
-// 			result[row][col] = m[col][row];
-// 		}
-// 	}
-// 	return result;
-// }
-
-// Mat4 Mat4::inverse() const
-// {
-// 	float aug[4][8];
-
-// 	for (int row = 0; row < 4; ++row) {
-// 		for (int col = 0; col < 4; ++col) {
-// 			aug[row][col] = m[row][col];
-// 			aug[row][col + 4] = (row == col) ? 1.0f : 0.0f;
-// 		}
-// 	}
-
-// 	for (int pivot = 0; pivot < 4; ++pivot) {
-// 		int bestRow = pivot;
-// 		for (int row = pivot + 1; row < 4; ++row) {
-// 			if (std::fabs(aug[row][pivot]) > std::fabs(aug[bestRow][pivot])) {
-// 				bestRow = row;
-// 			}
-// 		}
-
-// 		if (std::fabs(aug[bestRow][pivot]) < 1e-8f) {
-// 			return Mat4::identity();
-// 		}
-
-// 		if (bestRow != pivot) {
-// 			for (int col = 0; col < 8; ++col) {
-// 				const float tmp = aug[pivot][col];
-// 				aug[pivot][col] = aug[bestRow][col];
-// 				aug[bestRow][col] = tmp;
-// 			}
-// 		}
-
-// 		const float pivotValue = aug[pivot][pivot];
-// 		for (int col = 0; col < 8; ++col) {
-// 			aug[pivot][col] /= pivotValue;
-// 		}
-
-// 		for (int row = 0; row < 4; ++row) {
-// 			if (row == pivot) {
-// 				continue;
-// 			}
-// 			const float factor = aug[row][pivot];
-// 			for (int col = 0; col < 8; ++col) {
-// 				aug[row][col] -= factor * aug[pivot][col];
-// 			}
-// 		}
-// 	}
-
-// 	Mat4 result;
-// 	for (int row = 0; row < 4; ++row) {
-// 		for (int col = 0; col < 4; ++col) {
-// 			result[row][col] = aug[row][col + 4];
-// 		}
-// 	}
-
-// 	return result;
-// }
 
 Mat4 Mat4::operator*(const Mat4& other) const
 {

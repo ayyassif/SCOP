@@ -13,11 +13,6 @@ int main(int ac, char *av[])
         if (ac != 3)
             throw std::invalid_argument("Input must be a valid .obj file and a valid .ppm file.");
     
-        window = initiate();
-        if (window == nullptr)
-            throw std::runtime_error("Window initialization failed");
-        input = Input(window);
-
         DEBUG::INFO << "Loading texture: " << av[2] << std::endl;
         PPM image;
         image.load(av[2]);
@@ -49,31 +44,16 @@ int main(int ac, char *av[])
             scop.loop();
         }
 
-        glfwDestroyWindow(window);
-        window = nullptr;
-        glfwTerminate();
-        DEBUG::SUCCESS << "Application closed normally" << std::endl;
+        
     }
     catch (const std::exception& error)
     {
         DEBUG::ERROR << error.what() << std::endl;
-        if (window != nullptr)
-        {
-            glfwDestroyWindow(window);
-            window = nullptr;
-            glfwTerminate();
-        }
         return 1;
     }
     catch (...)
     {
         DEBUG::ERROR << "Unknown error" << std::endl;
-        if (window != nullptr)
-        {
-            glfwDestroyWindow(window);
-            window = nullptr;
-            glfwTerminate();
-        }
         return 1;
     }
 

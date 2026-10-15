@@ -20,18 +20,14 @@ OBJS := $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(filter %.cpp,$(SRCS)))
 OBJS += $(patsubst %.c,$(BUILD_DIR)/%.o,$(filter %.c,$(SRCS)))
 DEPS := $(OBJS:.o=.d)
 
-GLAD_FILES := glad/include/glad/glad.h \
-              glad/include/KHR/khrplatform.h \
-              glad/src/glad.c
-
-.PHONY: all clean fclean re run debug glad
+.PHONY: all clean fclean re run glad
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
 	$(CXX) $(OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
 
-$(OBJS) $(GLAD_FILES): | glad
+$(OBJS): | glad
 
 $(BUILD_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
@@ -55,14 +51,10 @@ glad:
 run: all
 	./$(NAME) $(ARGS)
 
-debug: CXXFLAGS += -g3 -O0
-debug: re
-
 clean:
 	rm -rf $(BUILD_DIR)
 
 fclean: clean
 	rm -f $(NAME)
-	rm -rf glad
 
 re: fclean all

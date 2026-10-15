@@ -196,7 +196,6 @@ namespace
 			const Vec2 normalized((projected.x - minU) / rangeU, (projected.y - minV) / rangeV);
 			uvByPosition[positionIndex] = Vec2(1.0f - normalized.y, normalized.x);
 		}
-		// <<<<------------------->>>
 		std::map<int, int> texcoordIndexByPosition;
 		for (int faceIndex : chartFaces)
 		{

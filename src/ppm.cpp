@@ -1,5 +1,8 @@
 #include "ppm.hpp"
 
+#include <cctype>
+#include <utility>
+
 PPM::PPM() : width(0), height(0), maxColor(0), pixels() {}
 
 int PPM::parseInteger(const std::string& token, const std::string& field)
@@ -50,6 +53,9 @@ void PPM::load(const std::string& path)
         throw std::length_error("PPM: image is too large");
 
     const size_t pixelSize = pixelCount * 3;
+
+    if (pixelSize > static_cast<size_t>(std::numeric_limits<std::streamsize>::max()))
+        throw std::length_error("PPM: image is too large for the input stream");
     
     pixels.resize(pixelSize);
 
