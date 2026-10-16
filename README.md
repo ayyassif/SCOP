@@ -94,6 +94,34 @@ The repository contains several PPM textures under `textures/` and sample OBJ/MT
 - `textures/`: P6 PPM texture assets
 - `glad/`: generated OpenGL loader sources and headers
 
+## Gallery
+
+> **Note:** The GIFs below are compressed previews for demonstration purposes. They may not fully represent the original visual quality of the application.
+
+![Backrooms demo](media/backrooms.gif)
+
+![Cat model](media/cat.gif)
+
+![Flower model](media/flower.gif)
+
+### Teapot — Chart Colors
+
+Each UV chart is displayed in a different color to visualize the texture mapping layout.
+
+![Teapot chart colors](media/teapot%20charts.png)
+
+### Teapot — Face Colors
+
+Faces are displayed with different colors to distinguish individual regions of the mesh.
+
+![Teapot face colors](media/teapot%20faces.png)
+
+### Teapot — Texture Mapping
+
+The texture is applied to the teapot using its UV coordinates.
+
+![Teapot texture](media/teapot%20texture.png)
+
 ## Resources
 
 Classic references used for the implementation and for understanding the topic:
@@ -102,4 +130,3 @@ Classic references used for the implementation and for understanding the topic:
 - [Wavefront OBJ file](https://en.wikipedia.org/wiki/Wavefront_.obj_file)
 - [Netpbm PPM format documentation](https://netpbm.sourceforge.net/doc/ppm.html)
 
-AI was used as an implementation and documentation aid throughout the project. It assisted with the manual OBJ parser, indexed mesh construction, automatic UV chart generation, P6 PPM validation, camera and OpenGL integration, shader setup, and error-handling structure. It was also used to review the source tree and help draft this README. AI-assisted output was reviewed and integrated as part of the development process, with technical decisions, testing, and validation remaining the developer's responsibility. The project does not use an AI runtime or an external model-loading library.
